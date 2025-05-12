@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -32,11 +33,11 @@ class Transaksi extends Controller
         // Pencarian
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('transaction_code', 'like', "%{$search}%")
-                ->orWhere('created_at', 'like', "%{$search}%")
-                ->orWhere('TotalAmount', 'like', "%{$search}%")
-                ->orWhere('PaymentAmount', 'like', "%{$search}%");
+                    ->orWhere('created_at', 'like', "%{$search}%")
+                    ->orWhere('TotalAmount', 'like', "%{$search}%")
+                    ->orWhere('PaymentAmount', 'like', "%{$search}%");
             });
         }
 
@@ -144,7 +145,17 @@ class Transaksi extends Controller
         }
     }
 
+    public function getProductByBarcode($barcode)
+    {
 
+        $product = Product::where('barcode', $barcode)->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        return response()->json($product);
+    }
 
     public function getProductById($id)
     {
@@ -161,19 +172,13 @@ class Transaksi extends Controller
     {
         // Fetch transactions from the database using the query builder
         $transactions = DB::table('transaksi')
-                    ->where('transaksi.user_id', auth()->id())
-                    ->select('transaksi.*')
-                    ->orderBy('transaksi.created_at', 'desc') // Mengurutkan berdasarkan tanggal terbaru
-                    ->get();
+            ->where('transaksi.user_id', auth()->id())
+            ->select('transaksi.*')
+            ->orderBy('transaksi.created_at', 'desc') // Mengurutkan berdasarkan tanggal terbaru
+            ->get();
 
 
         // Pass data to the view
         return view('transaksi.riwayat', compact('transactions'));
     }
-
-
-
-
-
-
 }

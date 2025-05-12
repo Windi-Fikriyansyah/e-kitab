@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -31,42 +32,108 @@ class Dashboard extends Controller
 
     public function dashboard(Request $request)
     {
-        $profitToday = DB::table('transaksidetails')
-            ->whereDate('created_at', now())
-            ->sum(DB::raw('(selling_price - purchase_price) * quantity'));
+        // Initialize variables
+        $omset = 0;
+        $pengeluaran = 0;
+        $profit = 0;
+        $jumlahTransaksi = 0;
+        $bestSellingProducts = [];
+        $lowStockProducts = [];
 
-        // Hitung omset hari ini
-        $omsetToday = DB::table('transaksidetails')
-            ->whereDate('created_at', now())
-            ->sum(DB::raw('selling_price * quantity'));
+        // Determine the period based on request
+        $period = $request->input('period', 'month');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-        // Hitung profit bulan ini
-        $profitThisMonth = DB::table('transaksidetails')
-            ->whereMonth('created_at', now()->month)
-            ->sum(DB::raw('(selling_price - purchase_price) * quantity'));
+        // Base query for best selling products with date filtering applied
+        $bestSellingQuery = DB::table('transaksidetails')
+            ->join('products', 'transaksidetails.ProductId', '=', 'products.id')
+            ->select(
+                'products.name',
+                DB::raw('SUM(transaksidetails.quantity) as total_quantity'),
+                DB::raw('SUM(transaksidetails.selling_price * transaksidetails.quantity) as total_sales')
+            );
 
-        // Hitung omset bulan ini
-        $omsetThisMonth = DB::table('transaksidetails')
-            ->whereMonth('created_at', now()->month)
-            ->sum(DB::raw('selling_price * quantity'));
+        // Apply date filters to the best selling query
+        if ($startDate && $endDate) {
+            $bestSellingQuery->whereBetween('transaksidetails.created_at', [$startDate, $endDate]);
+        } elseif ($period == 'today') {
+            $bestSellingQuery->whereDate('transaksidetails.created_at', now());
+        } else {
+            // This month's data (default)
+            $bestSellingQuery->whereMonth('transaksidetails.created_at', now()->month)
+                ->whereYear('transaksidetails.created_at', now()->year);
+        }
 
-        $transactionsToday = DB::table('transaksi')
-            ->whereDate('created_at', now())
-            ->count();
-
-        $transactionsMonth = DB::table('transaksi')
-            ->whereMonth('created_at', now()->month)
-            ->count();
-
-        $topProduct = DB::table('transaksidetails')
-            ->select('nama_produk', DB::raw('SUM(Quantity) as total_quantity'))
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->groupBy('nama_produk')
+        // Finalize best selling query
+        $bestSellingQuery->groupBy('transaksidetails.ProductId', 'products.name')
             ->orderByDesc('total_quantity')
-            ->first();
+            ->limit(5);
 
-            return view('dashboard', compact('profitToday', 'omsetToday', 'profitThisMonth', 'omsetThisMonth','transactionsToday','transactionsMonth','topProduct'));
+        // Low stock query remains unchanged
+        $lowStockQuery = DB::table('products')
+            ->select('name', 'stock', DB::raw('20 as minimum_stock'))  // Using default 20 as minimum_stock
+            ->where('stock', '<=', 20)  // Stock less than or equal to minimum
+            ->orderBy('stock')
+            ->limit(5);
+
+        // Query for different periods
+        if ($startDate && $endDate) {
+            // Custom date range
+            $omset = DB::table('transaksidetails')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->sum(DB::raw('selling_price * quantity'));
+
+            $pengeluaran = DB::table('transaksidetails')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->sum(DB::raw('purchase_price * quantity'));
+
+            $jumlahTransaksi = DB::table('transaksi')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->count();
+        } elseif ($period == 'today') {
+            // Today's data
+            $omset = DB::table('transaksidetails')
+                ->whereDate('created_at', now())
+                ->sum(DB::raw('selling_price * quantity'));
+
+            $pengeluaran = DB::table('transaksidetails')
+                ->whereDate('created_at', now())
+                ->sum(DB::raw('purchase_price * quantity'));
+
+            $jumlahTransaksi = DB::table('transaksi')
+                ->whereDate('created_at', now())
+                ->count();
+        } else {
+            // This month's data (default)
+            $omset = DB::table('transaksidetails')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum(DB::raw('selling_price * quantity'));
+
+            $pengeluaran = DB::table('transaksidetails')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum(DB::raw('purchase_price * quantity'));
+
+            $jumlahTransaksi = DB::table('transaksi')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count();
+        }
+
+        $profit = $omset - $pengeluaran;
+        $lowStockProducts = $lowStockQuery->get();
+        $bestSelling = $bestSellingQuery->get();
+
+
+        return view('dashboard', compact(
+            'omset',
+            'pengeluaran',
+            'profit',
+            'jumlahTransaksi',
+            'bestSelling',
+            'lowStockProducts'
+        ));
     }
-
 }

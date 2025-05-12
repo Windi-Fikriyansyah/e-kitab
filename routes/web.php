@@ -39,13 +39,13 @@ Route::get('/home', function () {
 Route::middleware(['auth'])->group(function () {
     Route::prefix('transaksi')->as('transaksi.')
         ->group(function () {
-        Route::get('', [Transaksi::class, 'index'])->middleware('permission:14')->name('index');
-        Route::get('/cariData', [Transaksi::class, 'cariData'])->middleware('permission:14')->name('cariData');
-        Route::get('/products/search', [Transaksi::class, 'search'])->middleware('permission:14')->name('search');
-        Route::get('/products/{id}', [Transaksi::class, 'getProductById'])->middleware('permission:14');
-        Route::post('/save', [Transaksi::class, 'saveTransaction'])->middleware('permission:14');
-        Route::get('/riwayat-transaksi', [Transaksi::class, 'showTransactionHistory'])->middleware('permission:14')->name('riwayat');
-    });
+            Route::get('', [Transaksi::class, 'index'])->middleware('permission:14')->name('index');
+            Route::get('/cariData', [Transaksi::class, 'cariData'])->middleware('permission:14')->name('cariData');
+            Route::get('/products/search', [Transaksi::class, 'search'])->middleware('permission:14')->name('search');
+            Route::get('/products/{id}', [Transaksi::class, 'getProductById'])->middleware('permission:14');
+            Route::post('/save', [Transaksi::class, 'saveTransaction'])->middleware('permission:14');
+            Route::get('/riwayat-transaksi', [Transaksi::class, 'showTransactionHistory'])->middleware('permission:14')->name('riwayat');
+        });
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -78,7 +78,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('edit/{id}', [ProductController::class, 'edit'])->middleware('permission:8')->name('edit');
                 Route::post('update/{id}', [ProductController::class, 'update'])->middleware('permission:8')->name('update');
                 Route::delete('/products/{id}', [ProductController::class, 'destroy'])->middleware('permission:8')->name('destroy');
-
             });
 
         Route::prefix('PenerimaanStok')->as('PenerimaanStok.')
@@ -91,8 +90,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/search-product', [PenerimaanStok::class, 'searchProduct'])->middleware('permission:9')->name('search');
                 Route::get('/product/barcode/{barcode}', [PenerimaanStok::class, 'getProductByBarcode'])->middleware('permission:9')->name('getByBarcode');
                 Route::post('store', [PenerimaanStok::class, 'store'])->middleware('permission:9')->name('store');
-
-
             });
 
         Route::prefix('PenguranganStok')->as('PenguranganStok.')
@@ -105,13 +102,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/search-product', [PenguranganStok::class, 'searchProduct'])->middleware('permission:10')->name('search');
                 Route::get('/product/barcode/{barcode}', [PenguranganStok::class, 'getProductByBarcode'])->middleware('permission:10')->name('getByBarcode');
                 Route::post('store', [PenguranganStok::class, 'store'])->middleware('permission:10')->name('store');
-
-
             });
-
-
-
-
     });
 
 
@@ -121,7 +112,6 @@ Route::middleware(['auth'])->group(function () {
             ->group(function () {
                 Route::get('', [LaporanStok::class, 'index'])->middleware('permission:32')->name('index');
                 Route::post('load', [LaporanStok::class, 'load'])->middleware('permission:32')->name('load');
-
             });
 
         // SERTIFIKAT
@@ -132,8 +122,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/products', [LaporanPenjualan::class, 'getProducts'])->middleware('permission:33')->name('getProducts');
             });
     });
-
-
 });
 
 require __DIR__ . '/auth.php';
