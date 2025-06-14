@@ -42,6 +42,42 @@
                         </div>
                     </div>
 
+                    <!-- Tambahkan field untuk ubah password -->
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Password Baru</label>
+                        <div class="col-sm-10">
+                            <div class="input-group" id="show_hide_password">
+                                <input class="form-control @error('password') is-invalid @enderror" type="password"
+                                    placeholder="Kosongkan jika tidak ingin mengubah password" name="password"
+                                    id="password">
+                                <div class="input-group-text">
+                                    <a href="javascript:void(0)"><i class="bx bx-hide"></i></a>
+                                </div>
+                                @error('password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <small class="text-muted">Minimal 8 karakter, mengandung huruf besar, kecil, angka, dan
+                                simbol</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Konfirmasi Password</label>
+                        <div class="col-sm-10">
+                            <div class="input-group" id="show_hide_confirmation_password">
+                                <input class="form-control @error('password_confirmation') is-invalid @enderror"
+                                    type="password" placeholder="Konfirmasi password baru" name="password_confirmation"
+                                    id="password_confirmation">
+                                <div class="input-group-text">
+                                    <a href="javascript:void(0)"><i class="bx bx-hide"></i></a>
+                                </div>
+                                @error('password_confirmation')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="row mb-3">
                         <label class="col-sm-2 col-form-label">Status</label>
@@ -59,22 +95,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Tipe</label>
-                        <div class="col-sm-10">
-                            <select class="form-select @error('tipe') is-invalid @enderror select_option" name="tipe"
-                                id="tipe" data-placeholder="Silahkan Pilih">
-                                <option value="" selected>Silahkan Pilih</option>
-                                <option value="owner" {{ $data->tipe == 'owner' ? 'selected' : '' }}>
-                                    Owner</option>
-                                <option value="kasir" {{ $data->tipe == 'kasir' ? 'selected' : '' }}>
-                                    Kasir</option>
-                            </select>
-                            @error('tipe')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
+
                     <div class="row mb-3">
                         <label class="col-sm-2 col-form-label">Peran</label>
                         <div class="col-sm-10">
@@ -110,6 +131,7 @@
         </div>
     </div>
 @endsection
+
 @push('js')
     <script>
         $(document).ready(function() {
@@ -118,20 +140,6 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
-
-            $("#show_hide_password_lama a").on('click', function(event) {
-                event.preventDefault();
-                if ($('#show_hide_password_lama input').attr("type") == "text") {
-                    $('#show_hide_password_lama input').attr('type', 'password');
-                    $('#show_hide_password_lama i').addClass("bx-hide");
-                    $('#show_hide_password_lama i').removeClass("bx-show");
-                } else if ($('#show_hide_password_lama input').attr("type") == "password") {
-                    $('#show_hide_password_lama input').attr('type', 'text');
-                    $('#show_hide_password_lama i').removeClass("bx-hide");
-                    $('#show_hide_password_lama i').addClass("bx-show");
-                }
-            });
-
 
             $("#show_hide_password a").on('click', function(event) {
                 event.preventDefault();

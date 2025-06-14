@@ -1,0 +1,361 @@
+@extends('template.app')
+@section('title', 'Data Produk')
+@section('content')
+    <div class="page-heading">
+        <h3>Data Produk</h3>
+    </div>
+    <div class="page-content">
+        @if (session('message'))
+            <div class="alert alert-success bg-success text-light border-0 alert-dismissible fade show" role="alert">
+                {{ session('message') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <div class="modal fade" id="addColumnModal" tabindex="-1" aria-labelledby="addColumnModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addColumnModalLabel">Tambah Kolom Baru</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="addColumnForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="column_name" class="form-label">Nama Kolom</label>
+                                <input type="text" class="form-control" id="column_name" name="column_name" required>
+                                <small class="text-muted">Gunakan format snake_case (contoh: nama_kolom)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="data_type" class="form-label">Tipe Data</label>
+                                <select class="form-select" id="data_type" name="data_type" required>
+                                    <option value="string">String (Text Pendek)</option>
+                                    <option value="text">Text (Panjang)</option>
+                                    <option value="integer">Integer (Angka)</option>
+                                    <option value="decimal">Decimal (Desimal)</option>
+                                    <option value="boolean">Boolean (True/False)</option>
+                                    <option value="date">Date (Tanggal)</option>
+                                    <option value="datetime">DateTime (Tanggal & Waktu)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card radius-10">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h5 class="card-title">Data Produk</h5>
+                    </div>
+                    <div class="dropdown ms-auto">
+                        <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#addColumnModal">
+                            <i class="fas fa-plus"></i> Tambah Kolom
+                        </button>
+                        <a href="{{ route('kelola_data.produk.create') }}" class="btn btn-success">Tambah Produk</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <input type="text" class="form-control filter-input" placeholder="Filter Kd Produk"
+                            data-column="0">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control filter-input" placeholder="Filter Judul" data-column="1">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select filter-select select2-penulis" data-column="2">
+                            <option value="">Semua Penulis</option>
+                            @foreach ($penulis as $penulis)
+                                <option value="{{ $penulis->nama_arab }}">{{ $penulis->nama_arab }} |
+                                    {{ $penulis->nama_indonesia }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select filter-select select2-kategori" data-column="3">
+                            <option value="">Semua Kategori</option>
+                            @foreach ($kategoris as $kategori)
+                                <option value="{{ $kategori->nama_arab }}">{{ $kategori->nama_arab }} |
+                                    {{ $kategori->nama_indonesia }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select filter-select select2-penerbit" data-column="4">
+                            <option value="">Semua Penerbit</option>
+                            @foreach ($penerbits as $penerbit)
+                                <option value="{{ $penerbit->nama_arab }}">{{ $penerbit->nama_arab }} |
+                                    {{ $penerbit->nama_indonesia }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select filter-select select2-supplier" data-column="5">
+                            <option value="">Semua Supplier</option>
+                            @foreach ($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}">{{ $supplier->nama_supplier }} |
+                                    {{ $supplier->telepon }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 mt-2">
+                        <input type="text" class="form-control filter-input" placeholder="Filter Stok" data-column="6">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" id="produk" style="width: 100%">
+                        <thead>
+                            <tr>
+                                <th>Kd Produk</th>
+                                <th>Judul</th>
+                                <th>Penulis</th>
+                                <th>Kategori</th>
+                                <th>Penerbit</th>
+                                <th>Supplier</th>
+                                <th>Stok</th>
+                                <th>Harga Modal</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+@endsection
+
+@push('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .right-gap {
+            margin-right: 10px
+        }
+
+        .select2-container .select2-selection--single {
+            height: 38px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+    </style>
+@endpush
+
+@push('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            // Inisialisasi Select2
+            $('.select2-penulis').select2({
+                theme: "bootstrap-5",
+                placeholder: "Pilih Penulis",
+                allowClear: true
+            });
+            $('.select2-kategori').select2({
+                theme: "bootstrap-5",
+                placeholder: "Pilih Kategori",
+                allowClear: true
+            });
+
+            $('.select2-penerbit').select2({
+                theme: "bootstrap-5",
+                placeholder: "Pilih Penerbit",
+                allowClear: true
+            });
+
+            $('.select2-supplier').select2({
+                theme: "bootstrap-5",
+                placeholder: "Pilih Supplier",
+                allowClear: true
+            });
+
+            var table = $('#produk').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('kelola_data.produk.load') }}",
+                    type: "POST",
+                    data: function(d) {
+                        // Tambahkan parameter filter untuk setiap kolom
+                        $('.filter-input, .filter-select').each(function() {
+                            if ($(this).val() != '') {
+                                d.columns[$(this).data('column')].search.value = $(this).val();
+                            }
+                        });
+                    }
+                },
+                pageLength: 10,
+                searching: true,
+                columns: [{
+                        data: 'kd_produk',
+                    }, {
+                        data: 'judul',
+                    }, {
+                        data: 'penulis',
+                    }, {
+                        data: 'kategori',
+                    }, {
+                        data: 'penerbit',
+                    }, {
+                        data: 'supplier',
+                    },
+                    {
+                        data: 'stok',
+                    }, {
+                        data: 'harga_modal',
+                        render: function(data) {
+                            return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                        }
+                    },
+                    {
+                        data: 'aksi',
+                        className: 'text-center text-nowrap'
+                    }
+                ],
+                columnDefs: [{
+                        className: "dt-head-center",
+                        targets: ['_all']
+                    },
+                    {
+                        className: "dt-body-center",
+                        targets: [0, 1, 2, 4, 5, 6]
+                    }
+                ]
+            });
+
+            // Event listener untuk filter input
+            $('.filter-input').keyup(function() {
+                table.ajax.reload();
+            });
+
+            // Event listener untuk filter select
+            $('.filter-select').change(function() {
+                table.ajax.reload();
+            });
+
+            $(document).on('click', '.delete-btn', function(e) {
+                e.preventDefault();
+                var deleteUrl = $(this).data('url');
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: "Produk ini akan dihapus!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: deleteUrl,
+                            type: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire(
+                                        'Terhapus!',
+                                        'Produk berhasil dihapus.',
+                                        'success'
+                                    );
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire(
+                                        'Error!',
+                                        'Gagal menghapus produk.',
+                                        'error'
+                                    );
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                Swal.fire(
+                                    'Error!',
+                                    'Gagal menghapus produk.',
+                                    'error'
+                                );
+                            }
+                        });
+                    }
+                });
+            });
+
+
+
+            $('#addColumnForm').submit(function(e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: "Kolom baru akan ditambahkan ke database",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, tambahkan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "{{ route('kelola_data.produk.addColumn') }}",
+                            type: "POST",
+                            data: $(this).serialize(),
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire(
+                                        'Berhasil!',
+                                        response.message,
+                                        'success'
+                                    );
+                                    $('#addColumnModal').modal('hide');
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire(
+                                        'Error!',
+                                        response.message,
+                                        'error'
+                                    );
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire(
+                                    'Error!',
+                                    xhr.responseJSON.message ||
+                                    'Gagal menambahkan kolom',
+                                    'error'
+                                );
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

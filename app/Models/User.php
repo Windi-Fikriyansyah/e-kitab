@@ -22,10 +22,8 @@ class User extends Authenticatable
         'name',
         'username',
         'password',
-        'kd_skpd',
         'role',
         'jabatan',
-        'tipe',
         'status_aktif'
     ];
 

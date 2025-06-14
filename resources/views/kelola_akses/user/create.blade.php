@@ -97,22 +97,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Tipe</label>
-                        <div class="col-sm-10">
-                            <select class="form-select @error('tipe') is-invalid @enderror select_option" name="tipe"
-                                id="tipe" data-placeholder="Silahkan Pilih">
-                                <option value="" selected>Silahkan Pilih</option>
-                                <option value="owner" {{ old('tipe') == 'owner' ? 'selected' : '' }}>
-                                    Owner</option>
-                                <option value="kasir" {{ old('tipe') == 'kasir' ? 'selected' : '' }}>
-                                    Kasir</option>
-                            </select>
-                            @error('tipe')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
+
                     <div class="row mb-3">
                         <label class="col-sm-2 col-form-label">Peran</label>
                         <div class="col-sm-10">
@@ -120,8 +105,7 @@
                                 id="role" data-placeholder="Silahkan Pilih">
                                 <option value="" selected>Silahkan Pilih</option>
                                 @foreach ($daftar_peran as $peran)
-                                    <option value="{{ $peran->id }}"
-                                        {{ old('role') == $peran->id ? 'selected' : '' }}>
+                                    <option value="{{ $peran->id }}" {{ old('role') == $peran->id ? 'selected' : '' }}>
                                         {{ $peran->name }}</option>
                                 @endforeach
                             </select>
@@ -134,8 +118,7 @@
                         <label class="col-sm-2 col-form-label">Jabatan</label>
                         <div class="col-sm-10">
                             <input class="form-control @error('jabatan') is-invalid @enderror" type="text"
-                                placeholder="Isi dengan nama" name="jabatan" id="jabatan"
-                                value="{{ old('jabatan') }}">
+                                placeholder="Isi dengan nama" name="jabatan" id="jabatan" value="{{ old('jabatan') }}">
                             @error('jabatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

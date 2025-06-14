@@ -31,8 +31,7 @@ class UserRequest extends FormRequest
                 ->letters()
                 ->mixedCase()
                 ->numbers()
-                ->symbols()
-                ->uncompromised();
+                ->symbols();
             $this->redirect = 'user/create';
         } elseif (request()->isMethod('put')) {
             $passwordRule = 'sometimes';
@@ -44,8 +43,7 @@ class UserRequest extends FormRequest
                     ->letters()
                     ->mixedCase()
                     ->numbers()
-                    ->symbols()
-                    ->uncompromised();
+                    ->symbols();
             }
             $this->redirect = 'user/' . Crypt::encrypt($this->user) . '/edit';
         }
@@ -55,7 +53,6 @@ class UserRequest extends FormRequest
             'password' => [$passwordRule, $cek],
             'password_lama' => [$passwordLamaRule],
             'confirmation_password' => [$passwordRule, 'same:password'],
-            'tipe' => ['required'],
             'status_aktif' => ['required'],
             'role' => ['required'],
             'jabatan' => ['required'],

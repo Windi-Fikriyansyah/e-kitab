@@ -1,0 +1,998 @@
+@extends('template.app')
+@section('title', isset($produk) ? 'Edit Produk' : 'Tambah Produk')
+@section('content')
+    <div class="page-heading">
+        <h2>{{ isset($produk) ? 'Edit Produk' : 'Tambah Produk' }}</h2>
+    </div>
+    <div class="page-content">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        @if (session('message'))
+            <div class="alert alert-danger border-0 bg-danger alert-dismissible fade show py-2">
+                <div class="d-flex align-items-center">
+                    <div class="font-35 text-white"><i class='bx bxs-message-square-x'></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0 text-white">Error</h6>
+                        <div class="text-white">{{ session('message') }}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        <div class="card">
+            <div class="card-body">
+                <form id="produkForm"
+                    action="{{ isset($produk) ? route('kelola_data.produk.update', Crypt::encrypt($produk->id)) : route('kelola_data.produk.store') }}"
+                    method="POST" enctype="multipart/form-data">
+                    @csrf
+                    @if (isset($produk))
+                        @method('PUT')
+                    @endif
+
+                    <div class="row">
+                        <!-- Kolom Pertama (Arab) -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="judul_arab">Judul (Arab)</label>
+                                <input type="text" name="judul_arab" id="judul_arab" class="form-control text-right"
+                                    dir="rtl" value="{{ old('judul_arab', $produk->judul ?? '') }}"
+                                    placeholder="Judul dalam bahasa Arab">
+                            </div>
+
+                            <!-- Replace the kategori select section with this: -->
+                            <div class="form-group">
+                                <label for="kategori">Kategori (Arab)</label>
+                                <select class="form-select @error('kategori') is-invalid @enderror" name="kategori"
+                                    dir="rtl" id="kategori" style="width: 100%">
+                                    @if (isset($produk) && $produk->kategori)
+                                        <option value="{{ $produk->kategori }}" selected>
+                                            {{ $produk->kategori }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('kategori')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="penerbit">Penerbit (Arab)</label>
+                                <select class="form-select @error('penerbit') is-invalid @enderror" name="penerbit"
+                                    dir="rtl" id="penerbit" style="width: 100%">
+                                    @if (isset($produk) && $produk->penerbit)
+                                        <option value="{{ $produk->penerbit }}" selected>
+                                            {{ $produk->penerbit }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('penerbit')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Kolom Kedua (Indonesia) -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="judul_indonesia">Judul (Indonesia)</label>
+                                <input type="text" name="judul_indonesia" id="judul_indonesia" class="form-control"
+                                    value="{{ old('judul_indonesia', $produk->judul_indo ?? '') }}"
+                                    placeholder="Judul dalam bahasa Indonesia">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kategori_indonesia">Kategori (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="kategori_indonesia"
+                                    id="kategori_indonesia"
+                                    value="{{ old('kategori_indonesia', isset($produk) && $produk->kategori ? $produk->kategori_indo : '') }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="form-group">
+                                <label for="penerbit_indonesia">Penerbit (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="penerbit_indonesia"
+                                    id="penerbit_indonesia"
+                                    value="{{ old('penerbit_indonesia', isset($produk) && $produk->penerbit ? $produk->penerbit_indo : '') }}"
+                                    required readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rest of your form remains the same -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="cover">Cover (Arab)</label>
+                                <select class="form-select @error('cover') is-invalid @enderror" name="cover"
+                                    dir="rtl" id="cover" style="width: 100%">
+                                    @if (isset($produk) && $produk->cover)
+                                        <option value="{{ $produk->cover }}" selected>
+                                            {{ $produk->cover }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('cover')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kertas">Kertas (Arab)</label>
+                                <select class="form-select @error('kertas') is-invalid @enderror" name="kertas"
+                                    dir="rtl" id="kertas" style="width: 100%">
+                                    @if (isset($produk) && $produk->kertas)
+                                        <option value="{{ $produk->kertas }}" selected>
+                                            {{ $produk->kertas }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('kertas')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kualitas">Kualitas (Arab)</label>
+                                <select class="form-select @error('kualitas') is-invalid @enderror" name="kualitas"
+                                    dir="rtl" id="kualitas" style="width: 100%">
+                                    @if (isset($produk) && $produk->kualitas)
+                                        <option value="{{ $produk->kualitas }}" selected>
+                                            {{ $produk->kualitas }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('kualitas')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="harakat">Harakat (Arab)</label>
+                                <select class="form-select @error('harakat') is-invalid @enderror" name="harakat"
+                                    dir="rtl" id="harakat" style="width: 100%">
+                                    @if (isset($produk) && $produk->harakat)
+                                        <option value="{{ $produk->harakat }}" selected>
+                                            {{ $produk->harakat }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('harakat')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label for="penulis">Penulis (Arab)</label>
+                                <select class="form-select @error('penulis') is-invalid @enderror" name="penulis"
+                                    dir="rtl" id="penulis" style="width: 100%">
+                                    @if (isset($produk) && $produk->penulis)
+                                        <option value="{{ $produk->penulis }}" selected>
+                                            {{ $produk->penulis }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('penulis')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="cover_indonesia">Cover (Indonesia)</label>
+                                <input type="text" class="form-control" name="cover_indonesia"
+                                    style="background-color: #e9ecef; color: #6c757d;" id="cover_indonesia"
+                                    value="{{ old('cover_indonesia', isset($produk) && $produk->cover ? $produk->cover_indo : '') }}"
+                                    required readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kertas_indonesia">Kertas (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="kertas_indonesia"
+                                    id="kertas_indonesia"
+                                    value="{{ old('kertas_indonesia', isset($produk) && $produk->kertas ? $produk->kertas_indo : '') }}"
+                                    required readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kualitas_indonesia">Kualitas (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="kualitas_indonesia"
+                                    id="kualitas_indonesia"
+                                    value="{{ old('kualitas_indonesia', isset($produk) && $produk->kualitas ? $produk->kualitas_indo : '') }}"
+                                    required readonly>
+                            </div>
+
+
+                            <div class="form-group">
+                                <label for="harakat_indonesia">Harakat (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="harakat_indonesia"
+                                    id="harakat_indonesia"
+                                    value="{{ old('harakat_indonesia', isset($produk) && $produk->harakat ? $produk->harakat_indo : '') }}"
+                                    required readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="penulis_indonesia">Penulis (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="penulis_indonesia"
+                                    id="penulis_indonesia"
+                                    value="{{ old('penulis_indonesia', isset($produk) && $produk->penulis ? $produk->penulis_indo : '') }}"
+                                    required readonly>
+                            </div>
+
+
+                        </div>
+
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="supplier">Supplier</label>
+                                <select class="form-select @error('supplier') is-invalid @enderror" name="supplier"
+                                    id="supplier" style="width: 100%">
+                                    @if (isset($produk) && $produk->supplier)
+                                        <option value="{{ $produk->supplier }}" selected>
+                                            {{ $produk->nama_supplier }} | {{ $produk->telepon }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('supplier')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="halaman">Halaman</label>
+                                <input type="text" name="halaman" id="halaman" class="form-control"
+                                    value="{{ old('halaman', $produk->halaman ?? '') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="berat">Berat (gram)</label>
+                                <input type="text" name="berat" id="berat" class="form-control"
+                                    value="{{ old('berat', $produk->berat ?? '') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="ukuran">Ukuran</label>
+                                <input type="text" name="ukuran" id="ukuran" class="form-control"
+                                    value="{{ old('ukuran', $produk->ukuran ?? '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="harga_modal_display">Harga Modal</label>
+                                <input type="text" id="harga_modal_display" class="form-control"
+                                    value="{{ old('harga_modal', isset($produk) ? number_format($produk->harga_modal, 0, ',', '.') : '') }}"
+                                    placeholder="0">
+                                <input type="hidden" name="harga_modal" id="harga_modal"
+                                    value="{{ old('harga_modal', $produk->harga_modal ?? '') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="harga_jual_display">Harga Jual</label>
+                                <input type="text" id="harga_jual_display" class="form-control"
+                                    value="{{ old('harga_jual', isset($produk) ? number_format($produk->harga_jual, 0, ',', '.') : '') }}"
+                                    placeholder="0">
+                                <input type="hidden" name="harga_jual" id="harga_jual"
+                                    value="{{ old('harga_jual', $produk->harga_jual ?? '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stok">Stok</label>
+                        <input type="number" name="stok" id="stok" class="form-control"
+                            value="{{ old('stok', $produk->stok ?? '') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gambar Produk</label>
+                        <div id="imageUploadContainer">
+                            <div class="input-group mb-3">
+                                <input type="file" name="images[]" class="form-control" accept="image/*" multiple>
+                                <button type="button" class="btn btn-success add-more-btn"
+                                    onclick="addMoreImageField()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @if (isset($produk) && $produk->images)
+                            <div class="mt-3">
+                                <h6>Gambar Saat Ini:</h6>
+                                <div class="row">
+                                    @foreach (json_decode($produk->images) as $image)
+                                        <div class="col-md-3 mb-3">
+                                            <img src="{{ asset('storage/products/' . $image) }}" class="img-thumbnail"
+                                                style="width: 100%; height: 150px; object-fit: cover;">
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="checkbox" name="delete_images[]"
+                                                    value="{{ $image }}" id="delete-{{ $loop->index }}">
+                                                <label class="form-check-label" for="delete-{{ $loop->index }}">
+                                                    Hapus gambar
+                                                </label>
+                                            </div>
+                                            <input type="hidden" name="existing_images[]" value="{{ $image }}">
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div id="dynamicFieldsContainer">
+                        <!-- Kolom dinamis akan ditampilkan di sini -->
+                    </div>
+
+
+
+                    <button type="submit" class="btn btn-primary">{{ isset($produk) ? 'Update' : 'Tambah' }}</button>
+                    <a href="{{ route('kelola_data.produk.index') }}" class="btn btn-warning">Kembali</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.produkData = @json(isset($produk) ? $produk : null);
+
+        function addMoreImageField() {
+            const container = document.getElementById('imageUploadContainer');
+            const newField = document.createElement('div');
+            newField.className = 'input-group mb-3';
+            newField.innerHTML = `
+                <input type="file" name="images[]" class="form-control" accept="image/*">
+                <button type="button" class="btn btn-danger remove-btn" onclick="removeImageField(this)">
+                    <i class="fas fa-minus"></i>
+                </button>
+            `;
+            container.appendChild(newField);
+        }
+
+        function removeImageField(button) {
+            const fieldGroup = button.parentElement;
+            fieldGroup.remove();
+        }
+    </script>
+@endsection
+@push('js')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Load kolom dinamis saat halaman dimuat
+            loadDynamicFields();
+
+            function loadDynamicFields() {
+                $.get("{{ route('kelola_data.produk.getDynamicColumns') }}", function(data) {
+                    let container = $('#dynamicFieldsContainer');
+                    container.empty();
+
+                    if (data.success && data.columns.length > 0) {
+                        data.columns.forEach(function(column) {
+                            // Skip kolom yang sudah ada di form utama
+                            if (['judul', 'kategori', 'penerbit', 'cover', 'kertas', 'kualitas',
+                                    'harakat', 'penulis', 'supplier', 'halaman', 'berat', 'ukuran',
+                                    'harga_modal',
+                                    'harga_jual', 'stok', 'kd_produk', 'id', 'created_at',
+                                    'updated_at', 'deleted_at'
+                                ].includes(column)) {
+                                return;
+                            }
+
+                            // Get existing values from PHP data
+                            let arabValue = '';
+                            let indoValue = '';
+
+                            if (window.produkData) {
+                                arabValue = window.produkData[column] || '';
+                                indoValue = window.produkData[column + '_indo'] || '';
+                            }
+
+                            // Tambahkan field untuk kolom dinamis
+                            container.append(`
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="${column}">${column.replace(/_/g, ' ').toUpperCase()} (Arab)</label>
+                                            <input type="text" name="${column}" id="${column}" class="form-control text-right" dir="rtl"
+                                                value="${arabValue}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="${column}_indo">${column.replace(/_/g, ' ').toUpperCase()} (Indonesia)</label>
+                                            <input type="text" name="${column}_indo" id="${column}_indo" class="form-control"
+                                                value="${indoValue}">
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                        });
+                    }
+                }).fail(function() {
+                    console.error('Gagal memuat kolom dinamis');
+                });
+            }
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            // Inisialisasi Select2 dengan tema Bootstrap 5
+            $('.select2').select2({
+                placeholder: 'Pilih opsi',
+                allowClear: true,
+                theme: 'bootstrap-5',
+                dropdownParent: $('.card-body') // Memastikan dropdown muncul di dalam card
+            });
+
+            // Function untuk format angka
+            function formatNumber(number) {
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+
+            // Function untuk membersihkan format angka
+            function cleanNumber(number) {
+                return number.replace(/\./g, '');
+            }
+
+            // Handle harga modal input
+            $('#harga_modal_display').on('input', function() {
+                let value = cleanNumber($(this).val());
+                if (value !== '') {
+                    $('#harga_modal').val(value);
+                    $(this).val(formatNumber(value));
+                } else {
+                    $('#harga_modal').val('');
+                    $(this).val('');
+                }
+            });
+
+            // Handle harga jual input
+            $('#harga_jual_display').on('input', function() {
+                let value = cleanNumber($(this).val());
+                if (value !== '') {
+                    $('#harga_jual').val(value);
+                    $(this).val(formatNumber(value));
+                } else {
+                    $('#harga_jual').val('');
+                    $(this).val('');
+                }
+            });
+
+            // Replace the kategori select2 initialization with this:
+            $('#kategori').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Kategori",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getkategori') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+                    return data.id;
+                }
+            });
+
+            // Update the kategori selection handler
+            $('#kategori').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#kategori_indonesia').val(data.nama_indonesia);
+            });
+
+
+            $('#penerbit').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih penerbit",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getpenerbit') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+
+                    return data.id;
+                }
+            });
+
+            // Update the kategori selection handler
+            $('#penerbit').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#penerbit_indonesia').val(data.nama_indonesia);
+            });
+
+
+            $('#cover').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Cover",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getcover') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+
+                    return data.id;
+                }
+            });
+
+            // Update the kategori selection handler
+            $('#cover').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#cover_indonesia').val(data.nama_indonesia);
+            });
+
+            $('#kertas').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Kertas",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getkertas') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+                    return data.id;
+                }
+            });
+
+            $('#kertas').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#kertas_indonesia').val(data.nama_indonesia);
+            });
+
+            // Kualitas Select2
+            $('#kualitas').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Kualitas",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getkualitas') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+                    return data.id;
+                }
+            });
+
+            $('#kualitas').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#kualitas_indonesia').val(data.nama_indonesia);
+            });
+
+            // Harakat Select2
+            $('#harakat').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Harakat",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getharakat') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+                    return data.id;
+                }
+            });
+
+            $('#harakat').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#harakat_indonesia').val(data.nama_indonesia);
+            });
+
+
+            $('#penulis').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih penulis",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getpenulis') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.nama_arab,
+                                    text: item.text,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: function(data) {
+                    if (data.loading) {
+                        return data.text;
+                    }
+                    var $result = $(
+                        '<div style="text-align: right; direction: rtl;">' +
+                        data.nama_arab + ' | ' +
+                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                        '</span>' +
+                        '</div>'
+                    );
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (data.id === '') {
+                        return data.text;
+                    }
+                    if (data.nama_arab) {
+                        return data.nama_arab;
+                    }
+                    return data.id;
+                }
+            });
+
+            $('#penulis').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#penulis_indonesia').val(data.nama_indonesia);
+            });
+
+            // Supplier Select2
+            $('#supplier').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Supplier",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getsupplier') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+
+            });
+
+            @if (isset($produk) && $produk->kategori)
+                var kategoriOption = new Option("{{ $produk->kategori }}", "{{ $produk->kategori }}", true, true);
+                $('#kategori').append(kategoriOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->penerbit)
+                var penerbitOption = new Option("{{ $produk->penerbit }}", "{{ $produk->penerbit }}", true, true);
+                $('#penerbit').append(penerbitOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->cover)
+                var coverOption = new Option("{{ $produk->cover }}", "{{ $produk->cover }}", true, true);
+                $('#cover').append(coverOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->kertas)
+                var kertasOption = new Option("{{ $produk->kertas }}", "{{ $produk->kertas }}", true, true);
+                $('#kertas').append(kertasOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->kualitas)
+                var kualitasOption = new Option("{{ $produk->kualitas }}", "{{ $produk->kualitas }}", true, true);
+                $('#kualitas').append(kualitasOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->harakat)
+                var harakatOption = new Option("{{ $produk->harakat }}", "{{ $produk->harakat }}", true, true);
+                $('#harakat').append(harakatOption).trigger('change');
+            @endif
+
+            @if (isset($produk) && $produk->penulis)
+                var penulisOption = new Option("{{ $produk->penulis }}", "{{ $produk->penulis }}", true, true);
+                $('#penulis').append(penulisOption).trigger('change');
+            @endif
+
+        });
+    </script>
+@endpush

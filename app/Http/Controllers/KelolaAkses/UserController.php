@@ -94,7 +94,6 @@ class UserController extends Controller
                 'name' => $request->name,
                 'username' => $request->username,
                 'password' => Hash::make($request->password),
-                'tipe' => $request->tipe,
                 'status_aktif' => $request->status_aktif,
                 'role' => (int)$request->role,
                 'jabatan' => $request->jabatan,
@@ -145,16 +144,20 @@ class UserController extends Controller
         try {
             $user = User::find($id);
 
-            $user
-                ->update([
-                    'name' => $request->name,
-                    'username' => $request->username,
-                    // 'password' => Hash::make($request->password),
-                    'tipe' => $request->tipe,
-                    'status_aktif' => $request->status_aktif,
-                    'role' => (int)$request->role,
-                    'jabatan' => $request->jabatan,
-                ]);
+            $updateData = [
+                'name' => $request->name,
+                'username' => $request->username,
+                'status_aktif' => $request->status_aktif,
+                'role' => (int)$request->role,
+                'jabatan' => $request->jabatan,
+            ];
+
+
+            if (!empty($request->password)) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            $user->update($updateData);
 
             $user->syncRoles((int)$request->role);
 
@@ -164,7 +167,7 @@ class UserController extends Controller
                 ->with('message', 'User berhasil diupdate!');
         } catch (Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput();
+            return redirect()->back()->withInput()->with('message', 'Data gagal disimpan: ' . $e->getMessage());
         }
     }
 

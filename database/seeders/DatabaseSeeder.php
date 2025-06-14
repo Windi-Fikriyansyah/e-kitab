@@ -26,11 +26,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'admin',
             'username' => 'admin',
             'email' => 'admin@gmail.com',
-            'password' => Hash::make('Admin123@'),
-            'kd_skpd' => '5.02.0.00.0.00.02.0000',
+            'password' => Hash::make('admin123'),
             'status_aktif' => 1,
-            'tipe' => 'admin',
-            'role' => ''
+            'role' => '1',
         ]);
     }
 }
