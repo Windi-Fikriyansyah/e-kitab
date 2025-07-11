@@ -105,7 +105,8 @@
                                 id="role" data-placeholder="Silahkan Pilih">
                                 <option value="" selected>Silahkan Pilih</option>
                                 @foreach ($daftar_peran as $peran)
-                                    <option value="{{ $peran->id }}" {{ old('role') == $peran->id ? 'selected' : '' }}>
+                                    <option value="{{ $peran->id }}" data-role-name="{{ $peran->name }}"
+                                        {{ old('role') == $peran->id ? 'selected' : '' }}>
                                         {{ $peran->name }}</option>
                                 @endforeach
                             </select>
@@ -114,11 +115,31 @@
                             @enderror
                         </div>
                     </div>
+
+                    <div class="row mb-3" id="supplier_selection" style="display: none;">
+                        <label class="col-sm-2 col-form-label">Supplier</label>
+                        <div class="col-sm-10">
+                            <select class="form-select @error('supplier_id') is-invalid @enderror select_option"
+                                name="supplier_id" id="supplier_id" data-placeholder="Silahkan Pilih Supplier">
+                                <option value="" selected>Silahkan Pilih Supplier</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier->id }}"
+                                        {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
+                                        {{ $supplier->nama_supplier }}</option>
+                                @endforeach
+                            </select>
+                            @error('supplier_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <label class="col-sm-2 col-form-label">Jabatan</label>
                         <div class="col-sm-10">
                             <input class="form-control @error('jabatan') is-invalid @enderror" type="text"
-                                placeholder="Isi dengan nama" name="jabatan" id="jabatan" value="{{ old('jabatan') }}">
+                                placeholder="Isi dengan nama" name="jabatan" id="jabatan"
+                                value="{{ old('jabatan') }}">
                             @error('jabatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -167,6 +188,26 @@
                     $('#show_hide_confirmation_password i').addClass("bx-show");
                 }
             });
+
+            function toggleSupplierSelection() {
+                var selectedOption = $('#role option:selected');
+                var roleName = selectedOption.data('role-name');
+
+                if (roleName && roleName.toLowerCase() === 'supplier') {
+                    $('#supplier_selection').show();
+                } else {
+                    $('#supplier_selection').hide();
+                    $('#supplier_id').val(''); // Reset supplier selection
+                }
+            }
+
+            // Event listener for role change
+            $('#role').change(function() {
+                toggleSupplierSelection();
+            });
+
+            // Check on page load for old input
+            toggleSupplierSelection();
         });
     </script>
 @endpush

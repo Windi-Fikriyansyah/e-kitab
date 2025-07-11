@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\KelolaAkses\UserRequest;
 use Illuminate\Http\Request;
 use App\Models\Role;
+use App\Models\Supplier;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -63,7 +64,7 @@ class UserController extends Controller
         return Datatables::of($query)
             ->addColumn('aksi', function ($row) {
                 $btn = '<a href="' . route("user.edit", Crypt::encrypt($row->id)) . '" class="btn btn-md btn-warning" style="margin-right:4px"><span class="fa-fw select-all fas"></span></a>';
-                $btn .= '<a onclick="hapus(\'' . $row->id . '\')" class="btn btn-md btn-danger"><span class="fa-fw select-all fas"></span></a>';
+                // $btn .= '<a onclick="hapus(\'' . $row->id . '\')" class="btn btn-md btn-danger"><span class="fa-fw select-all fas"></span></a>';
                 return $btn;
             })
             ->rawColumns(['aksi'])
@@ -78,8 +79,8 @@ class UserController extends Controller
 
 
         $daftar_peran = Role::all();
-
-        return view('kelola_akses.user.create', compact('daftar_peran'));
+        $suppliers = Supplier::all();
+        return view('kelola_akses.user.create', compact('daftar_peran', 'suppliers'));
     }
 
     /**
@@ -89,6 +90,7 @@ class UserController extends Controller
     {
         DB::beginTransaction();
 
+
         try {
             $user = User::create([
                 'name' => $request->name,
@@ -97,6 +99,7 @@ class UserController extends Controller
                 'status_aktif' => $request->status_aktif,
                 'role' => (int)$request->role,
                 'jabatan' => $request->jabatan,
+                'id_supplier' => $request->supplier_id,
             ]);
 
             $user->syncRoles((int)$request->role);
@@ -131,8 +134,9 @@ class UserController extends Controller
         $data = User::find($id);
 
         $daftar_peran = Role::all();
+        $suppliers = Supplier::all();
 
-        return view('kelola_akses.user.edit', compact('daftar_peran', 'data'));
+        return view('kelola_akses.user.edit', compact('daftar_peran', 'data', 'suppliers'));
     }
 
     /**
@@ -150,6 +154,7 @@ class UserController extends Controller
                 'status_aktif' => $request->status_aktif,
                 'role' => (int)$request->role,
                 'jabatan' => $request->jabatan,
+                'id_supplier' => $request->supplier_id,
             ];
 
 
@@ -178,18 +183,22 @@ class UserController extends Controller
     {
         DB::beginTransaction();
         try {
-            User::find($id)
-                ->delete();
+            User::find($id)->delete();
 
             DB::commit();
             return response()->json([
                 'status' => true,
+                'message' => 'Data berhasil dihapus'
             ], 200);
         } catch (Exception $e) {
             DB::rollBack();
-            return redirect()->back();
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menghapus data: ' . $e->getMessage()
+            ], 500);
         }
     }
+
 
     // GANTI SKPD
 

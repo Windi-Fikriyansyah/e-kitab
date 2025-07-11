@@ -32,7 +32,52 @@ class Dashboard extends Controller
 
     public function dashboard(Request $request)
     {
+        $totalIncome = DB::table('transaksi')
+            ->where('payment_status', 'lunas')
+            ->sum('total');
+        // Total transaksi
+        $totalTransactions = DB::table('transaksi')->count();
 
-        return view('dashboard');
+        // Total customer
+        $totalCustomers = DB::table('customer')->count();
+
+        $totalpiutang = DB::table('transaksi')
+            ->where('payment_status', 'hutang')
+            ->sum('total');
+
+        // 5 Produk terlaris
+        $bestSellers = DB::table('produk')
+            ->join('transaksi_items', 'produk.kd_produk', '=', 'transaksi_items.kd_produk')
+            ->join('transaksi', 'transaksi_items.id_transaksi', '=', 'transaksi.id')
+            ->where('transaksi.payment_status', 'lunas')
+            ->select('produk.*', DB::raw('SUM(transaksi_items.quantity) as total_sold'))
+            ->groupBy(
+                'produk.id',
+                'produk.kd_produk',
+                'produk.judul',
+                'produk.harga_jual',
+                'produk.kategori',
+                'produk.stok',
+                'produk.created_at',
+                'produk.updated_at'
+            )
+            ->orderByDesc('total_sold')
+            ->limit(5)
+            ->get();
+
+        $lowStockItems = DB::table('produk')
+            ->where('stok', '<', 10)
+            ->orderBy('stok', 'asc')
+            ->limit(5)
+            ->get();
+
+        return view('dashboard', [
+            'totalIncome' => $totalIncome,
+            'totalTransactions' => $totalTransactions,
+            'totalCustomers' => $totalCustomers,
+            'totalpiutang' => $totalpiutang,
+            'bestSellers' => $bestSellers,
+            'lowStockItems' => $lowStockItems
+        ]);
     }
 }

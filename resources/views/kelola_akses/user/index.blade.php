@@ -85,16 +85,17 @@
                 buttonsStyling: false
             });
             swalWithBootstrapButtons.fire({
-                title: "Are you sure?",
-                text: "You won't be able to revert this!",
+                title: "Apakah Anda yakin?",
+                text: "Data yang dihapus tidak dapat dikembalikan!",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Ya, hapus",
-                cancelButtonText: "Tidak, kembali!",
+                cancelButtonText: "Tidak, batal!",
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: '/user/' + id,
+                        url: "{{ route('user.destroy', '') }}/" + id,
                         type: "DELETE",
                         data: {
                             _token: '{{ csrf_token() }}'
@@ -103,29 +104,31 @@
                             if (response.status == true) {
                                 swalWithBootstrapButtons.fire({
                                     title: "Terhapus!",
-                                    text: "Data berhasil dihapus!",
+                                    text: "Data berhasil dihapus.",
                                     icon: "success"
                                 });
-                                let tabel = $('#user').DataTable();
-                                tabel.ajax.reload();
+                                $('#user').DataTable().ajax.reload();
                             } else {
                                 swalWithBootstrapButtons.fire({
                                     title: "Gagal!",
                                     text: response.message,
-                                    icon: "danger"
+                                    icon: "error"
                                 });
                             }
                         },
-                        error: function(e) {
-                            console.log(e);
-                        },
+                        error: function(xhr) {
+                            swalWithBootstrapButtons.fire({
+                                title: "Gagal!",
+                                text: "Terjadi kesalahan saat menghapus data.",
+                                icon: "error"
+                            });
+                        }
                     });
-
                 } else if (result.dismiss === Swal.DismissReason.cancel) {
                     swalWithBootstrapButtons.fire({
-                        title: "Batal",
-                        text: "Data tidak dihapus!",
-                        icon: "error"
+                        title: "Dibatalkan",
+                        text: "Data tidak dihapus.",
+                        icon: "info"
                     });
                 }
             });

@@ -53,9 +53,28 @@ class TransaksiPenjualanController extends Controller
             ->make(true);
     }
 
+    public function cetakInvoice($id)
+    {
+        $transaksi = DB::table('transaksi')
+            ->where('id', $id)
+            ->first();
+
+        if (!$transaksi) {
+            abort(404);
+        }
+
+        $items = DB::table('transaksi_items')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('id_transaksi', $id)
+            ->select('transaksi_items.*', 'produk.judul', 'produk.penulis')
+            ->get();
+
+        return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items'));
+    }
 
     public function simpanTransaksi(Request $request)
     {
+
         DB::beginTransaction();
         try {
             // Validasi input
@@ -67,10 +86,16 @@ class TransaksiPenjualanController extends Controller
                 'items.*.kd_produk' => 'required|exists:produk,kd_produk',
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.unit_price' => 'required|numeric|min:0',
+                'items.*.original_price' => 'required|numeric|min:0',
                 'subtotal' => 'required|numeric|min:0',
                 'diskon_persen' => 'numeric|min:0',
                 'total' => 'required|numeric|min:0',
                 'paid_amount' => 'required|numeric|min:0',
+                'used_deposit' => 'numeric|min:0',
+                'ekspedisi' => 'nullable|string|max:255',
+                'ekspedisi_lain' => 'nullable|required_if:ekspedisi,Lainnya|string|max:255',
+                'notes' => 'nullable|string',
+
             ]);
 
 
@@ -78,10 +103,28 @@ class TransaksiPenjualanController extends Controller
             // Generate kode transaksi
             $kodeTransaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
 
+            $customer = DB::table('customer')->where('id', $request->customer)->first();
+            if (!$customer) {
+                throw new \Exception('Customer tidak ditemukan');
+            }
+
+            $ekspedisi = $request->ekspedisi === 'Lainnya' ? $request->ekspedisi_lain : $request->ekspedisi;
+
+            $depositTersedia = $customer->deposit;
+            $requestedDeposit = $request->used_deposit;
+            $totalTransaksi = $request->total;
+
+            // Deposit yang benar-benar digunakan (tidak melebihi total transaksi atau deposit tersedia)
+            $usedDeposit = min($requestedDeposit, $totalTransaksi, $depositTersedia);
+
+            // Sisa deposit yang akan dikembalikan (jika deposit lebih besar dari total transaksi)
+            $sisaDeposit = max(0, $requestedDeposit - $totalTransaksi);
+            $remainingAmount = max(0, $totalTransaksi - $usedDeposit - $request->paid_amount);
             // Simpan data transaksi
             $transaksiId = DB::table('transaksi')->insertGetId([
                 'kode_transaksi' => $kodeTransaksi,
                 'id_customer' => $request->customer,
+                'ekspedisi' => $ekspedisi,
                 'nama_customer' => DB::table('customer')->where('id', $request->customer)->value('nama'),
                 'no_hp_customer' => DB::table('customer')->where('id', $request->customer)->value('no_hp'),
                 'alamat_customer' => DB::table('customer')->where('id', $request->customer)->value('alamat'),
@@ -91,8 +134,8 @@ class TransaksiPenjualanController extends Controller
                 'discount' => $request->diskon_persen ?? 0,
                 'total' => $request->total,
                 'paid_amount' => $request->paid_amount,
-                'remaining_amount' => max(0, $request->total - $request->paid_amount),
-                'change_amount' => max(0, $request->paid_amount - $request->total),
+                'remaining_amount' => $remainingAmount,
+                'change_amount' => max(0, ($request->paid_amount + $usedDeposit) - $totalTransaksi),
                 'notes' => $request->notes,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -105,6 +148,8 @@ class TransaksiPenjualanController extends Controller
                     'kd_produk' => $item['kd_produk'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'original_price' => $item['original_price'],
+                    'is_custom_price' => $item['unit_price'] != $item['original_price'],
                     'total_price' => $item['quantity'] * $item['unit_price'],
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -116,11 +161,14 @@ class TransaksiPenjualanController extends Controller
                     ->decrement('stok', $item['quantity']);
             }
 
-            // Update deposit customer jika ada
-            if ($request->used_deposit > 0) {
+            if ($requestedDeposit > 0) {
+                // Hitung total perubahan deposit (deposit digunakan dikurangi sisa yang dikembalikan)
+                $totalDepositChange = $usedDeposit - $sisaDeposit;
+
+                // Update deposit customer
                 DB::table('customer')
                     ->where('id', $request->customer)
-                    ->decrement('deposit', $request->used_deposit);
+                    ->decrement('deposit', $totalDepositChange);
             }
 
             DB::commit();

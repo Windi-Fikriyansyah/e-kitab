@@ -103,7 +103,8 @@
                                 id="role" data-placeholder="Silahkan Pilih">
                                 <option value="" selected>Silahkan Pilih</option>
                                 @foreach ($daftar_peran as $peran)
-                                    <option value="{{ $peran->id }}" {{ $data->role == $peran->id ? 'selected' : '' }}>
+                                    <option value="{{ $peran->id }}" data-role-name="{{ $peran->name }}"
+                                        {{ $data->role == $peran->id ? 'selected' : '' }}>
                                         {{ $peran->name }}</option>
                                 @endforeach
                             </select>
@@ -112,6 +113,25 @@
                             @enderror
                         </div>
                     </div>
+
+                    <div class="row mb-3" id="supplier_selection" style="display: none;">
+                        <label class="col-sm-2 col-form-label">Supplier</label>
+                        <div class="col-sm-10">
+                            <select class="form-select @error('supplier_id') is-invalid @enderror select_option"
+                                name="supplier_id" id="supplier_id" data-placeholder="Silahkan Pilih Supplier">
+                                <option value="" selected>Silahkan Pilih Supplier</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier->id }}"
+                                        {{ isset($data->id_supplier) && $data->id_supplier == $supplier->id ? 'selected' : '' }}>
+                                        {{ $supplier->nama_supplier }}</option>
+                                @endforeach
+                            </select>
+                            @error('supplier_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <label class="col-sm-2 col-form-label">Jabatan</label>
                         <div class="col-sm-10">
@@ -166,6 +186,26 @@
                     $('#show_hide_confirmation_password i').addClass("bx-show");
                 }
             });
+
+            function toggleSupplierSelection() {
+                var selectedOption = $('#role option:selected');
+                var roleName = selectedOption.data('role-name');
+
+                if (roleName && roleName.toLowerCase() === 'supplier') {
+                    $('#supplier_selection').show();
+                } else {
+                    $('#supplier_selection').hide();
+                    $('#supplier_id').val(''); // Reset supplier selection
+                }
+            }
+
+            // Event listener for role change
+            $('#role').change(function() {
+                toggleSupplierSelection();
+            });
+
+            // Check on page load for existing data
+            toggleSupplierSelection();
         });
     </script>
 @endpush

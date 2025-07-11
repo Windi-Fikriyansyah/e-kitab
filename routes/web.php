@@ -25,8 +25,12 @@ use App\Http\Controllers\KelolaData\ProfilePerusahaan;
 use App\Http\Controllers\KelolaData\SupplierController;
 use App\Http\Controllers\KelolaLink\DeskripsiController;
 use App\Http\Controllers\KelolaLink\GenerateController;
+use App\Http\Controllers\Laporan\LaporanStokController;
+use App\Http\Controllers\Laporan\LaporanSupplierController;
+use App\Http\Controllers\Laporan\RekapSupplierController;
 use App\Http\Controllers\Transaksi\BarangKeluarController;
 use App\Http\Controllers\Transaksi\BarangMasukController;
+use App\Http\Controllers\Transaksi\DataTransaksiController;
 use App\Http\Controllers\Transaksi\TransaksiPenjualanController;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
@@ -77,6 +81,7 @@ Route::middleware(['auth'])->group(function () {
     // User
     Route::resource('user', UserController::class)->middleware('permission:4');
     Route::post('user/load', [UserController::class, 'load'])->middleware('permission:4')->name('user.load');
+    Route::delete('user/{user}', [UserController::class, 'destroy'])->middleware('permission:4')->name('user.destroy');
 
 
     // Kelola Data
@@ -295,6 +300,51 @@ Route::middleware(['auth'])->group(function () {
                     ->name('simpancustomer');
                 Route::post('/transaksi/penjualan/simpan', [TransaksiPenjualanController::class, 'simpanTransaksi'])
                     ->name('simpan');
+                Route::get('/transaksi/penjualan/cetak-invoice/{id}', [TransaksiPenjualanController::class, 'cetakInvoice'])
+                    ->name('cetak_invoice');
+            });
+
+        Route::prefix('data_transaksi')->as('data_transaksi.')
+            ->group(function () {
+                Route::get('', [DataTransaksiController::class, 'index'])->middleware('permission:28')->name('index');
+                Route::post('load', [DataTransaksiController::class, 'load'])->middleware('permission:28')->name('load');
+                Route::get('create', [DataTransaksiController::class, 'create'])->middleware('permission:28')->name('create');
+                Route::post('store', [DataTransaksiController::class, 'store'])->middleware('permission:28')->name('store');
+                Route::get('edit/{id}', [DataTransaksiController::class, 'edit'])->middleware('permission:28')->name('edit');
+                Route::get('detail/{id}', [DataTransaksiController::class, 'detail'])->middleware('permission:28')->name('detail');
+                Route::put('update/{id}', [DataTransaksiController::class, 'update'])->middleware('permission:28')->name('update');
+                Route::delete('/barang_keluar/{id}', [DataTransaksiController::class, 'destroy'])->middleware('permission:28')->name('destroy');
+                Route::post('/getproduk', [DataTransaksiController::class, 'getproduk'])->middleware('permission:28')->name('getproduk');
+                Route::post('/{id}/pay', [DataTransaksiController::class, 'pay'])->name('pay');
+                Route::get('/payment-history/{id}', [DataTransaksiController::class, 'paymentHistory'])->name('payment_history');
+            });
+    });
+
+
+
+    Route::prefix('laporan')->as('laporan.')->group(function () {
+        Route::prefix('laporan-stok')->as('laporan-stok.')
+            ->group(function () {
+                Route::get('', [LaporanStokController::class, 'index'])->middleware('permission:26')->name('index');
+                Route::post('load', [LaporanStokController::class, 'load'])->middleware('permission:26')->name('load');
+                Route::post('filter', [LaporanStokController::class, 'filter'])->middleware('permission:26')->name('filter');
+                Route::get('export', [LaporanStokController::class, 'export'])->middleware('permission:26')->name('export');
+            });
+
+        Route::prefix('laporan_supplier')->as('laporan_supplier.')
+            ->group(function () {
+                Route::get('', [LaporanSupplierController::class, 'index'])->middleware('permission:27')->name('index');
+                Route::post('load', [LaporanSupplierController::class, 'load'])->middleware('permission:27')->name('load');
+                Route::post('filter', [LaporanSupplierController::class, 'filter'])->middleware('permission:27')->name('filter');
+                Route::get('export', [LaporanSupplierController::class, 'export'])->middleware('permission:27')->name('export');
+            });
+
+        Route::prefix('rekap_laporan_supplier')->as('rekap_laporan_supplier.')
+            ->group(function () {
+                Route::get('', [RekapSupplierController::class, 'index'])->middleware('permission:29')->name('index');
+                Route::post('load', [RekapSupplierController::class, 'load'])->middleware('permission:29')->name('load');
+                Route::post('filter', [RekapSupplierController::class, 'filter'])->middleware('permission:29')->name('filter');
+                Route::get('export', [RekapSupplierController::class, 'export'])->middleware('permission:29')->name('export');
             });
     });
 });

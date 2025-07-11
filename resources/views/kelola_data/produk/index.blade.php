@@ -48,6 +48,27 @@
             </div>
         </div>
 
+        <div class="modal fade" id="barcodeModal" tabindex="-1" aria-labelledby="barcodeModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="barcodeModalLabel">Barcode Produk</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="barcodeContainer"></div>
+                        <p id="barcodeText" class="mt-2"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-success" onclick="downloadBarcodeAsJPG()">Download
+                            JPG</button>
+                        <button type="button" class="btn btn-primary" onclick="printBarcode()">Cetak</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div class="card radius-10">
             <div class="card-header">
@@ -70,7 +91,8 @@
                             data-column="0">
                     </div>
                     <div class="col-md-2">
-                        <input type="text" class="form-control filter-input" placeholder="Filter Judul" data-column="1">
+                        <input type="text" class="form-control filter-input" placeholder="Filter Judul"
+                            data-column="1">
                     </div>
                     <div class="col-md-2">
                         <select class="form-select filter-select select2-penulis" data-column="2">
@@ -109,7 +131,8 @@
                         </select>
                     </div>
                     <div class="col-md-2 mt-2">
-                        <input type="text" class="form-control filter-input" placeholder="Filter Stok" data-column="6">
+                        <input type="text" class="form-control filter-input" placeholder="Filter Stok"
+                            data-column="6">
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -156,13 +179,86 @@
         .select2-container--default .select2-selection--single .select2-selection__arrow {
             height: 36px;
         }
+
+        #barcodeContainer svg {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 @endpush
 
 @push('js')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
+        window.printBarcode = function() {
+            // Clone the barcode container for printing
+            const printContent = document.getElementById('barcodeContainer').cloneNode(true);
+            const printWindow = window.open('', '', 'width=600,height=600');
+
+            printWindow.document.open();
+            printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Cetak Barcode</title>
+            <style>
+                body {
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                }
+                svg {
+                    margin: 20px auto;
+                    display: block;
+                }
+                @media print {
+                    body { padding: 0; }
+                    button { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <h3>Barcode Produk</h3>
+            <div id="printContent">${printContent.innerHTML}</div>
+            <p>${document.getElementById('barcodeText').textContent}</p>
+            <button onclick="window.print()">Cetak</button>
+            <button onclick="downloadBarcodeImage()">Download JPG</button>
+            <button onclick="window.close()">Tutup</button>
+            <script>
+                function downloadBarcodeImage() {
+                    html2canvas(document.querySelector("#printContent")).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'barcode.jpg';
+                        link.href = canvas.toDataURL('image/jpeg');
+                        link.click();
+                    });
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+            printWindow.document.close();
+        };
+
+        // Tambahkan fungsi untuk download JPG langsung dari modal
+        function downloadBarcodeAsJPG() {
+            html2canvas(document.querySelector("#barcodeContainer")).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'barcode_' + document.getElementById('barcodeText').textContent.replace(
+                    /[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+                link.href = canvas.toDataURL('image/jpeg');
+                link.click();
+            });
+        }
+
+
         $(document).ready(function() {
             $.ajaxSetup({
                 headers: {
@@ -307,6 +403,24 @@
                 });
             });
 
+            $(document).on('click', '.barcode-btn', function() {
+                var kdProduk = $(this).data('kd');
+                var judulProduk = $(this).data('judul');
+
+                $('#barcodeText').text(kdProduk + ' - ' + judulProduk);
+                $('#barcodeContainer').html('<svg id="barcode"></svg>');
+
+                // Generate barcode
+                JsBarcode("#barcode", kdProduk, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 2,
+                    height: 50,
+                    displayValue: false
+                });
+
+                $('#barcodeModal').modal('show');
+            });
 
 
             $('#addColumnForm').submit(function(e) {

@@ -164,15 +164,22 @@
 
 <body>
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12 mt-3">
-                <button type="button" class="btn btn-primary mb-3" data-toggle="modal" data-target="#modal-produk">
-                    <i class="fa fa-plus"></i> Pilih Produk
-                </button><br>
-                <div class="form-check form-check-inline">
+        <div class="row align-items-center mt-4">
+            <div class="col-md-8 col-12 mb-2">
+                <button type="button" class="btn btn-primary mr-2" data-toggle="modal" data-target="#modal-produk">
+                    <i class="fa fa-plus mr-2"></i>Pilih Produk
+                </button>
+
+                <div class="form-check form-check-inline mt-2 mt-md-0">
                     <input class="form-check-input" type="checkbox" id="dropship-mode" name="dropship_mode">
                     <label class="form-check-label" for="dropship-mode">Mode Dropship</label>
                 </div>
+            </div>
+
+            <div class="col-md-4 col-12 text-md-right text-left mb-2">
+                <a href="{{ route('dashboard') }}" class="btn btn-outline-danger">
+                    <i class="fa fa-home mr-2"></i>Home
+                </a>
             </div>
         </div>
         <form id="form-transaksi" action="{{ route('transaksi.transaksi_penjualan.simpan') }}" method="post">
@@ -256,6 +263,36 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="ekspedisi">Ekspedisi</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <select class="form-control" name="ekspedisi" id="ekspedisi">
+                                                <option value="">Pilih Ekspedisi</option>
+                                                <option value="JNE">JNE</option>
+                                                <option value="J&T">J&T</option>
+                                                <option value="SiCepat">SiCepat</option>
+                                                <option value="AnterAja">AnterAja</option>
+                                                <option value="Ninja Express">Ninja Express</option>
+                                                <option value="Lainnya">Lainnya</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="ekspedisi-lain-container" style="display:none;">
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="ekspedisi_lain">Nama Ekspedisi</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <input type="text" class="form-control" name="ekspedisi_lain"
+                                                id="ekspedisi_lain">
+                                        </div>
+                                    </td>
+                                </tr>
+
 
                             </table>
                         </div>
@@ -277,15 +314,29 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <!-- In the deposit input section (around line 340) -->
                                 <tr>
                                     <td style="vertical-align:top; width:20%">
-                                        <label for="user">Deposit</label>
+                                        <label for="deposit">Deposit Tersedia</label>
                                     </td>
                                     <td>
                                         <div class="form-group">
-                                            <input type="text" name="deposit" id="deposit" value=""
+                                            <input type="text" name="deposit" id="deposit" value="0"
                                                 class="form-control" readonly>
+                                            <small class="text-muted">Klik "Gunakan Deposit" untuk menggunakan</small>
                                         </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <button type="button" id="use-deposit-btn" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-coins"></i> Gunakan Deposit
+                                        </button>
+                                        <button type="button" id="reset-deposit-btn"
+                                            class="btn btn-danger btn-sm ml-2">
+                                            <i class="fas fa-times"></i> Reset
+                                        </button>
                                     </td>
                                 </tr>
                                 <tr>
@@ -361,6 +412,17 @@
                                 </tr>
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
+                                        <label for="deposit-used">Deposit Digunakan</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <input type="text" name="deposit_used" id="deposit-used"
+                                                value="0" class="form-control" readonly>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
                                         <label for="bayar">Bayar</label>
                                     </td>
                                     <td>
@@ -431,9 +493,8 @@
                                 <h1><b><span id="kembalian" style="font-size:35pt">0</span></b></h1>
                             </div>
                             <div align="right">
-                                <a href="" id="simpan" class="btn btn-flat btn-lg btn-danger">
-                                    <i class="fa fa-list"></i> Data transaksi
-                                </a>
+                                <textarea name="notes" id="catatan" class="form-control" rows="3"
+                                    placeholder="Masukkan catatan transaksi"></textarea>
                             </div>
                         </div>
                     </div>
@@ -558,6 +619,13 @@
 
     <script>
         $(document).ready(function() {
+            $('#ekspedisi').change(function() {
+                if ($(this).val() === 'Lainnya') {
+                    $('#ekspedisi-lain-container').show();
+                } else {
+                    $('#ekspedisi-lain-container').hide();
+                }
+            });
             toastr.options = {
                 "closeButton": true,
                 "debug": false,
@@ -592,10 +660,88 @@
                 updateGrandTotal();
             });
 
+            $('#use-deposit-btn').on('click', function() {
+                var availableDeposit = parseRupiah($('#deposit').val()) || 0;
+                var grandTotal = parseRupiah($('#grand_total').text()) || 0;
+                var currentDepositUsed = parseRupiah($('#deposit-used').val()) || 0;
+
+                if (availableDeposit <= 0) {
+                    toastr.warning('Pelanggan tidak memiliki deposit', 'Peringatan');
+                    return;
+                }
+
+                // Calculate remaining available deposit (total - already used)
+                var remainingDeposit = availableDeposit - currentDepositUsed;
+
+                if (remainingDeposit <= 0) {
+                    toastr.warning('Deposit sudah habis digunakan', 'Peringatan');
+                    return;
+                }
+
+                // Calculate how much more we can apply
+                var totalNeeded = parseRupiah($('#total').val()) || 0;
+                var paymentNeeded = totalNeeded - currentDepositUsed;
+
+                if (paymentNeeded <= 0) {
+                    toastr.info('Total sudah terpenuhi oleh deposit', 'Informasi');
+                    return;
+                }
+
+                // Apply either remaining deposit or needed amount, whichever is smaller
+                var depositToUse = Math.min(remainingDeposit, paymentNeeded);
+
+                // Update deposit used
+                $('#deposit-used').val(formatRupiah(currentDepositUsed + depositToUse));
+
+                // Auto-fill payment field with remaining amount
+                var remainingPayment = totalNeeded - (currentDepositUsed + depositToUse);
+                $('#bayar').val(formatRupiah(remainingPayment > 0 ? remainingPayment : 0));
+
+                updateGrandTotal();
+                calculateKembalian();
+
+                toastr.success('Deposit digunakan: ' + formatRupiah(depositToUse), 'Berhasil');
+            });
+
+            $('#reset-deposit-btn').on('click', function() {
+                $('#deposit-used').val('0');
+                $('#bayar').val('0');
+                updateGrandTotal();
+                calculateKembalian();
+                toastr.info('Deposit direset', 'Informasi');
+            });
+
+            function validateQuantities() {
+                var isValid = true;
+
+                $('#cart_table tr').each(function() {
+                    var row = $(this);
+                    var qty = parseInt(row.find('.qty-input').val()) || 0;
+                    var stok = parseInt(row.find('.stok').text()) || 0;
+
+                    if (qty > stok) {
+                        isValid = false;
+                        // Highlight row yang bermasalah
+                        row.addClass('bg-danger text-white');
+                        toastr.error(
+                            `Quantity untuk produk ${row.find('td:eq(2)').text()} melebihi stok (${stok})`,
+                            'Error!');
+                    } else {
+                        row.removeClass('bg-danger text-white');
+                    }
+                });
+
+                return isValid;
+            }
+
             // Submit form transaksi
             $('#form-transaksi').on('submit', function(e) {
                 e.preventDefault();
 
+                if (!validateQuantities()) {
+                    toastr.error('Terdapat produk dengan quantity melebihi stok', 'Error!');
+                    return false;
+                }
                 // Validasi minimal ada 1 item di cart
                 if ($('#cart_table tr').length === 0) {
                     toastr.error('Minimal harus ada 1 produk dalam transaksi', 'Error!');
@@ -609,6 +755,25 @@
                     return;
                 }
 
+                if ($('#dropship-mode').is(':checked') && !$('#ekspedisi').val()) {
+                    toastr.error('Ekspedisi harus dipilih untuk mode dropship', 'Error!');
+                    $('#ekspedisi').focus();
+                    return;
+                }
+
+                if ($('#lunas').is(':checked')) {
+                    var total = parseRupiah($('#total').val()) || 0;
+                    var bayar = parseRupiah($('#bayar').val()) || 0;
+                    var depositUsed = parseRupiah($('#deposit-used').val()) || 0;
+                    var totalPayment = bayar + depositUsed;
+
+                    if (totalPayment < total) {
+                        toastr.error('Pembayaran + Deposit tidak mencukupi untuk transaksi Lunas',
+                            'Error!');
+                        return;
+                    }
+                }
+
                 // Siapkan data items
                 var items = [];
                 $('#cart_table tr').each(function() {
@@ -618,7 +783,8 @@
                         quantity: parseInt(row.find('.qty-input').val()),
                         unit_price: parseRupiah($('#dropship-mode').is(':checked') ?
                             row.find('.custom-price-input').val() :
-                            row.find('.harga-asli').text())
+                            row.find('.harga-asli').text()),
+                        original_price: parseRupiah(row.find('.harga-asli').text())
                     });
                 });
 
@@ -631,6 +797,12 @@
                     );
                 }
 
+                var ekspedisi = $('#ekspedisi').val();
+                if (ekspedisi === 'Lainnya') {
+                    ekspedisi = $('#ekspedisi_lain').val();
+                }
+
+
                 // Siapkan data transaksi
                 var transaksiData = {
                     customer: $('#customer').val(),
@@ -642,7 +814,10 @@
                     paid_amount: parseRupiah($('#bayar').val()),
                     used_deposit: usedDeposit,
                     diskon_persen: parseFloat($('#diskon-persen').val()) || 0,
-                    notes: $('#catatan').val() || ''
+                    notes: $('#catatan').val() || '',
+                    ekspedisi: $('#ekspedisi').val(),
+                    ekspedisi_lain: $('#ekspedisi').val() === 'Lainnya' ? $('#ekspedisi_lain').val() :
+                        null,
                 };
 
                 // Jika metode DP, pastikan payment_method adalah 'dp'
@@ -665,10 +840,16 @@
                             toastr.success(response.message || 'Transaksi berhasil disimpan!',
                                 'Sukses!');
 
-                            // Redirect ke halaman detail transaksi atau cetak struk
-                            window.location.href =
-                                "{{ route('transaksi.transaksi_penjualan.index') }}/" + response
-                                .data.transaksi_id;
+                            var invoiceUrl =
+                                "{{ route('transaksi.transaksi_penjualan.cetak_invoice', '') }}/" +
+                                response.data.transaksi_id;
+                            var invoiceWindow = window.open(invoiceUrl, '_blank');
+
+                            // Redirect ke halaman transaksi setelah 3 detik
+                            setTimeout(function() {
+                                window.location.href =
+                                    "{{ route('transaksi.transaksi_penjualan.index') }}";
+                            }, 3000);
                         } else {
                             toastr.error(response.message || 'Gagal menyimpan transaksi!',
                                 'Error!');
@@ -810,14 +991,13 @@
 
             $('#customer').on('change', function() {
                 var selectedCustomer = $(this).select2('data')[0];
+                var depositValue = 0;
 
-                // Jika ada data customer yang dipilih dan memiliki deposit
                 if (selectedCustomer && selectedCustomer.deposit) {
-                    $('#deposit').val(formatRupiah(selectedCustomer.deposit));
-                } else {
-                    $('#deposit').val('0');
+                    depositValue = selectedCustomer.deposit;
                 }
 
+                $('#deposit').val(formatRupiah(depositValue));
                 updateGrandTotal();
             });
 
@@ -1235,7 +1415,11 @@
                             formatRupiah(product.harga_jual) + '</td>' +
                             '<td class="custom-price-cell"><input type="text" class="form-control custom-price-input" value="' +
                             formatRupiah(product.harga_jual) + '" style="width: 100%;"></td>' +
-                            '<td><input type="number" class="form-control qty-input" value="1" min="1" style="width: 70px;"></td>' +
+                            '<td>' +
+                            '<input type="number" class="form-control qty-input" value="1" min="1" style="width: 70px;">' +
+                            '<span class="stok" style="display:none;">' + product.stok + '</span>' +
+                            // Add hidden stock info
+                            '</td>' +
                             '<td class="subtotal">' + formatRupiah(product.harga_jual) + '</td>' +
                             '<td><button type="button" class="btn btn-danger btn-sm remove-item"><i class="fa fa-trash"></i></button></td>' +
                             '</tr>';
@@ -1261,7 +1445,6 @@
                     updateGrandTotal();
                 });
             }
-
             // Event handler untuk input Rupiah
             $(document).on('keyup', '.custom-price-input', function(e) {
                 $(this).val(formatRupiahInput($(this).val(), 'Rp '));
@@ -1296,30 +1479,40 @@
             function updateSubtotal(row) {
                 var harga = 0;
                 if ($('#dropship-mode').is(':checked')) {
-                    // Ambil nilai dari input Rupiah dan konversi ke angka
                     var hargaInput = row.find('.custom-price-input').val();
                     harga = parseRupiah(hargaInput) || 0;
                 } else {
                     harga = parseRupiah(row.find('.harga-asli').text());
                 }
+
                 var qty = parseInt(row.find('.qty-input').val()) || 0;
+                var stok = parseInt(row.find('.stok').text()) || 0;
+
+                if (qty > stok) {
+                    row.addClass('bg-danger text-white');
+                    toastr.error('Quantity melebihi stok yang tersedia (' + stok + ')', 'Error!');
+                    row.find('.qty-input').val(stok);
+                    qty = stok;
+                } else {
+                    row.removeClass('bg-danger text-white');
+                }
+
                 var subtotal = harga * qty;
                 row.find('.subtotal').text(formatRupiah(subtotal));
             }
-
             // Fungsi untuk update grand total
             // Ganti fungsi updateGrandTotal() yang ada dengan yang ini:
             function updateGrandTotal() {
                 var grandTotal = 0;
 
-                // Hitung subtotal dari semua item
+                // Calculate subtotal from all items
                 $('#cart_table tr').each(function() {
                     var subtotalText = $(this).find('.subtotal').text().replace('Rp ', '').replace(/\./g,
                         '');
                     grandTotal += parseFloat(subtotalText) || 0;
                 });
 
-                // Hitung diskon jika ada
+                // Calculate discount if any
                 var diskonPersen = 0;
                 var diskonNominal = 0;
 
@@ -1332,31 +1525,19 @@
 
                 var totalSetelahDiskon = grandTotal - diskonNominal;
 
-                // Update grand_total (sebelum diskon)
+                // Update grand_total display
                 $('#grand_total').text(formatRupiah(grandTotal));
 
-                // Hitung total setelah deposit
-                var deposit = parseRupiah($('#deposit').val()) || 0;
-                var totalSetelahDeposit = totalSetelahDiskon - deposit;
+                // Update total field (before deposit/payment)
+                $('#total').val(formatRupiah(totalSetelahDiskon));
 
-                // Pastikan total tidak kurang dari 0
-                if (totalSetelahDeposit < 0) {
-                    totalSetelahDeposit = 0;
-                }
-
-                // Update total field
-                $('#total').val(formatRupiah(totalSetelahDeposit));
-
-                // Update nilai yang akan dikirim ke server
+                // Update values for server submission
                 $('input[name="subtotal"]').val(grandTotal);
                 $('input[name="discount"]').val(diskonNominal);
-                $('input[name="total"]').val(totalSetelahDeposit);
+                $('input[name="total"]').val(totalSetelahDiskon);
 
-                // Hitung kembalian
                 calculateKembalian();
             }
-
-
 
             // Event handler untuk input persentase diskon
             $('#diskon-persen').on('input change', function() {
@@ -1385,7 +1566,9 @@
             function byr() {
                 var total = parseRupiah($('#total').val()) || 0;
                 var bayar = parseRupiah($('#bayar').val()) || 0;
-                var kembalian = bayar - total;
+                var depositUsed = parseRupiah($('#deposit-used').val()) || 0;
+                var totalPayment = bayar + depositUsed;
+                var kembalian = totalPayment - total;
 
                 // Jika status hutang dan DP tidak dicentang, kembalian selalu 0
                 if ($('#hutang').is(':checked') && !$('#dp').is(':checked')) {
@@ -1407,15 +1590,14 @@
                 $(this).val(formatRupiahInput($(this).val(), 'Rp '));
 
                 // Hitung kembalian
-                byr();
+                calculateKembalian();
             });
 
             $('#bayar').on('blur', function() {
                 var value = parseRupiah($(this).val());
                 $(this).val(formatRupiah(value));
-                byr();
+                calculateKembalian();
             });
-
             // Di dalam $(document).ready(function() { ... }), tambahkan:
             // Real-time calculation for kembalian
             $('#bayar').on('input', calculateKembalian);
@@ -1425,32 +1607,46 @@
 
             // Fungsi untuk menghitung kembalian secara realtime
             function calculateKembalian() {
-                var total = parseRupiah($('#total').val()) || 0; // Gunakan total bukan grand_total
+                var total = parseRupiah($('#total').val()) || 0;
                 var bayar = parseRupiah($('#bayar').val()) || 0;
+                var depositUsed = parseRupiah($('#deposit-used').val()) || 0;
+                var totalPayment = bayar + depositUsed;
                 var kembalian = 0;
 
                 if ($('#hutang').is(':checked')) {
                     if ($('#dp').is(':checked')) {
-                        kembalian = 0;
-                        if (bayar > total) {
-                            toastr.warning('DP tidak boleh melebihi total pembayaran', 'Peringatan');
-                            $('#bayar').val(formatRupiah(total));
-                            bayar = total;
+                        // For DP, payment cannot exceed total
+                        if (totalPayment > total) {
+                            toastr.warning('Pembayaran tidak boleh melebihi total', 'Peringatan');
+                            $('#bayar').val(formatRupiah(total - depositUsed));
+                            bayar = total - depositUsed;
+                            totalPayment = total;
                         }
-                    } else {
                         kembalian = 0;
-                        $('#bayar').val('Rp 0').prop('readonly', true);
+                    } else {
+                        // For full hutang, no payment needed
+                        $('#bayar').val('0').prop('readonly', true);
+                        $('#deposit-used').val('0');
+                        kembalian = 0;
                     }
                 } else {
-                    kembalian = bayar - total;
+                    kembalian = totalPayment - total;
+
+                    // Don't allow negative change (means underpayment)
                     if (kembalian < 0) {
-                        $('#kembalian').addClass('text-danger').removeClass('text-success');
-                    } else {
-                        $('#kembalian').addClass('text-success').removeClass('text-danger');
+                        kembalian = 0;
                     }
                 }
 
+                // Update display
                 $('#kembalian').text(formatRupiah(kembalian));
+
+                // Set color based on payment status
+                if (totalPayment < total) {
+                    $('#kembalian').addClass('text-danger').removeClass('text-success');
+                } else {
+                    $('#kembalian').addClass('text-success').removeClass('text-danger');
+                }
             }
             // Panggil fungsi saat pertama kali load
             calculateKembalian();

@@ -77,8 +77,9 @@ class ProdukController extends Controller
             ->addColumn('aksi', function ($row) {
                 $viewButton = '<a href="' . route('kelola_data.produk.show', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-info me-1"><i class="fas fa-eye"></i></a>';
                 $editButton = '<a href="' . route('kelola_data.produk.edit', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-warning me-1"><i class="fas fa-edit"></i></a>';
+                $barcodeButton = '<button class="btn btn-sm btn-primary me-1 barcode-btn" data-kd="' . $row->kd_produk . '" data-judul="' . $row->judul . '"><i class="fas fa-barcode"></i></button>';
                 $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('kelola_data.produk.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
-                return $viewButton . $editButton . $deleteButton;
+                return $viewButton . $editButton . $barcodeButton . $deleteButton;
             })
             ->rawColumns(['aksi'])
             ->make(true);
