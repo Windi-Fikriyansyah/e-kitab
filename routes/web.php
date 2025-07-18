@@ -22,7 +22,9 @@ use App\Http\Controllers\KelolaData\PenerbitController;
 use App\Http\Controllers\KelolaData\PenulisController;
 use App\Http\Controllers\KelolaData\ProdukController;
 use App\Http\Controllers\KelolaData\ProfilePerusahaan;
+use App\Http\Controllers\KelolaData\SubKategoriController;
 use App\Http\Controllers\KelolaData\SupplierController;
+use App\Http\Controllers\KelolaData\UkuranController;
 use App\Http\Controllers\KelolaLink\DeskripsiController;
 use App\Http\Controllers\KelolaLink\GenerateController;
 use App\Http\Controllers\Laporan\LaporanStokController;
@@ -123,6 +125,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/kategori/{id}', [KategoriController::class, 'destroy'])->middleware('permission:8')->name('destroy');
             });
 
+        Route::prefix('sub_kategori')->as('sub_kategori.')
+            ->group(function () {
+                Route::get('', [SubKategoriController::class, 'index'])->middleware('permission:34')->name('index');
+                Route::post('load', [SubKategoriController::class, 'load'])->middleware('permission:34')->name('load');
+                Route::get('create', [SubKategoriController::class, 'create'])->middleware('permission:34')->name('create');
+                Route::post('store', [SubKategoriController::class, 'store'])->middleware('permission:34')->name('store');
+                Route::get('edit/{id}', [SubKategoriController::class, 'edit'])->middleware('permission:34')->name('edit');
+                Route::put('update/{id}', [SubKategoriController::class, 'update'])->middleware('permission:34')->name('update');
+                Route::delete('/sub_kategori/{id}', [SubKategoriController::class, 'destroy'])->middleware('permission:34')->name('destroy');
+                Route::post('/getkategori', [SubKategoriController::class, 'getkategori'])->middleware('permission:34')->name('getkategori');
+            });
+
         Route::prefix('penerbit')->as('penerbit.')
             ->group(function () {
                 Route::get('', [PenerbitController::class, 'index'])->middleware('permission:9')->name('index');
@@ -200,6 +214,17 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/supplier/{id}', [PenulisController::class, 'destroy'])->middleware('permission:19')->name('destroy');
             });
 
+        Route::prefix('ukuran')->as('ukuran.')
+            ->group(function () {
+                Route::get('', [UkuranController::class, 'index'])->middleware('permission:30')->name('index');
+                Route::post('load', [UkuranController::class, 'load'])->middleware('permission:30')->name('load');
+                Route::get('create', [UkuranController::class, 'create'])->middleware('permission:30')->name('create');
+                Route::post('store', [UkuranController::class, 'store'])->middleware('permission:30')->name('store');
+                Route::get('edit/{id}', [UkuranController::class, 'edit'])->middleware('permission:30')->name('edit');
+                Route::put('update/{id}', [UkuranController::class, 'update'])->middleware('permission:30')->name('update');
+                Route::delete('/supplier/{id}', [UkuranController::class, 'destroy'])->middleware('permission:30')->name('destroy');
+            });
+
         Route::prefix('produk')->as('produk.')
             ->group(function () {
                 Route::get('', [ProdukController::class, 'index'])->middleware('permission:20')->name('index');
@@ -218,11 +243,13 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('produk/getharakat', [ProdukController::class, 'getharakat'])->name('getharakat');
                 Route::post('produk/getpenulis', [ProdukController::class, 'getpenulis'])->name('getpenulis');
                 Route::post('produk/getsupplier', [ProdukController::class, 'getsupplier'])->name('getsupplier');
+                Route::post('produk/getukuran', [ProdukController::class, 'getukuran'])->name('getukuran');
 
                 Route::post('/kelola-data/produk/add-column', [ProdukController::class, 'addColumn'])->name('addColumn');
                 Route::get('/kelola-data/produk/get-columns', [ProdukController::class, 'getDynamicColumns'])->name('getDynamicColumns');
 
                 Route::post('/produk/delete-image', [ProdukController::class, 'deleteImage'])->name('deleteImage');
+                Route::post('/getsubkategori', [ProdukController::class, 'getSubKategori'])->name('getsubkategori');
             });
     });
 
@@ -317,6 +344,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/getproduk', [DataTransaksiController::class, 'getproduk'])->middleware('permission:28')->name('getproduk');
                 Route::post('/{id}/pay', [DataTransaksiController::class, 'pay'])->name('pay');
                 Route::get('/payment-history/{id}', [DataTransaksiController::class, 'paymentHistory'])->name('payment_history');
+                Route::get('/cetak-invoice/{id}', [DataTransaksiController::class, 'cetakInvoice'])
+                    ->name('cetak_invoice');
             });
     });
 
@@ -345,6 +374,13 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('load', [RekapSupplierController::class, 'load'])->middleware('permission:29')->name('load');
                 Route::post('filter', [RekapSupplierController::class, 'filter'])->middleware('permission:29')->name('filter');
                 Route::get('export', [RekapSupplierController::class, 'export'])->middleware('permission:29')->name('export');
+            });
+        Route::prefix('laporan_penjualan')->as('laporan_penjualan.')
+            ->group(function () {
+                Route::get('', [LaporanPenjualan::class, 'index'])->middleware('permission:32')->name('index');
+                Route::post('load', [LaporanPenjualan::class, 'load'])->middleware('permission:32')->name('load');
+                Route::post('filter', [LaporanPenjualan::class, 'filter'])->middleware('permission:32')->name('filter');
+                Route::get('export', [LaporanPenjualan::class, 'export'])->middleware('permission:32')->name('export');
             });
     });
 });

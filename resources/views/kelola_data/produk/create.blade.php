@@ -64,6 +64,21 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="sub_kategori">Sub Kategori (Arab)</label>
+                                <select class="form-select @error('sub_kategori') is-invalid @enderror" name="sub_kategori"
+                                    dir="rtl" id="sub_kategori" style="width: 100%">
+                                    @if (isset($produk) && $produk->sub_kategori)
+                                        <option value="{{ $produk->sub_kategori }}" selected>
+                                            {{ $produk->sub_kategori }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('sub_kategori')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
                                 <label for="penerbit">Penerbit (Arab)</label>
                                 <select class="form-select @error('penerbit') is-invalid @enderror" name="penerbit"
                                     dir="rtl" id="penerbit" style="width: 100%">
@@ -94,6 +109,16 @@
                                     style="background-color: #e9ecef; color: #6c757d;" name="kategori_indonesia"
                                     id="kategori_indonesia"
                                     value="{{ old('kategori_indonesia', isset($produk) && $produk->kategori ? $produk->kategori_indo : '') }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sub_kategori_indonesia">Sub Kategori (Indonesia)</label>
+                                <input type="text" class="form-control"
+                                    style="background-color: #e9ecef; color: #6c757d;" name="sub_kategori_indonesia"
+                                    id="sub_kategori_indonesia"
+                                    value="{{ old('sub_kategori_indonesia', isset($produk) && $produk->sub_kategori ? $produk->sub_kategori_indo : '') }}"
                                     readonly>
 
                             </div>
@@ -282,8 +307,17 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="ukuran">Ukuran</label>
-                                <input type="text" name="ukuran" id="ukuran" class="form-control"
-                                    value="{{ old('ukuran', $produk->ukuran ?? '') }}">
+                                <select class="form-select @error('ukuran') is-invalid @enderror" name="ukuran"
+                                    id="ukuran" style="width: 100%">
+                                    @if (isset($produk) && $produk->ukuran)
+                                        <option value="{{ $produk->ukuran }}" selected>
+                                            {{ $produk->ukuran }}
+                                        </option>
+                                    @endif
+                                </select>
+                                @error('ukuran')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -552,7 +586,76 @@
             $('#kategori').on('select2:select', function(e) {
                 var data = e.params.data;
                 $('#kategori_indonesia').val(data.nama_indonesia);
+                $('#sub_kategori').val(null).trigger('change');
+                $('#sub_kategori_indonesia').val('');
+
+                // Load sub kategori berdasarkan kategori yang dipilih
+                loadSubKategori(data.id);
             });
+
+            function loadSubKategori(kategoriNamaArab) {
+                $('#sub_kategori').select2({
+                    theme: "bootstrap-5",
+                    width: "100%",
+                    placeholder: "Silahkan Pilih Sub Kategori",
+                    minimumInputLength: 0,
+                    dropdownParent: $('.card-body'),
+                    ajax: {
+                        url: "{{ route('kelola_data.produk.getsubkategori') }}",
+                        dataType: 'json',
+                        type: "POST",
+                        delay: 250,
+                        data: function(params) {
+                            return {
+                                q: $.trim(params.term),
+                                kategori: kategoriNamaArab,
+                                _token: "{{ csrf_token() }}"
+                            };
+                        },
+                        processResults: function(data) {
+                            return {
+                                results: $.map(data, function(item) {
+                                    return {
+                                        id: item.nama_arab,
+                                        text: item.text,
+                                        nama_arab: item.nama_arab,
+                                        nama_indonesia: item.nama_indonesia
+                                    }
+                                })
+                            };
+                        },
+                        cache: true
+                    },
+                    templateResult: function(data) {
+                        if (data.loading) {
+                            return data.text;
+                        }
+                        var $result = $(
+                            '<div style="text-align: right; direction: rtl;">' +
+                            data.nama_arab + ' | ' +
+                            '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
+                            '</span>' +
+                            '</div>'
+                        );
+                        return $result;
+                    },
+                    templateSelection: function(data) {
+                        if (data.id === '') {
+                            return data.text;
+                        }
+                        if (data.nama_arab) {
+                            return data.nama_arab;
+                        }
+                        return data.id;
+                    }
+                });
+
+                // Event ketika sub kategori dipilih
+                $('#sub_kategori').on('select2:select', function(e) {
+                    var data = e.params.data;
+                    $('#sub_kategori_indonesia').val(data.nama_indonesia);
+                });
+            }
 
 
             $('#penerbit').select2({
@@ -958,9 +1061,49 @@
 
             });
 
-            @if (isset($produk) && $produk->kategori)
-                var kategoriOption = new Option("{{ $produk->kategori }}", "{{ $produk->kategori }}", true, true);
-                $('#kategori').append(kategoriOption).trigger('change');
+            $('#ukuran').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih ukuran",
+                minimumInputLength: 0,
+                dropdownParent: $('.card-body'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getukuran') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                },
+
+            });
+
+            @if (isset($produk) && $produk->kategori && $produk->sub_kategori)
+                // Load sub kategori saat edit
+                loadSubKategori("{{ $produk->kategori }}");
+
+                // Set nilai sub kategori yang sudah ada
+                setTimeout(function() {
+                    var subKategoriOption = new Option("{{ $produk->sub_kategori }}",
+                        "{{ $produk->sub_kategori }}", true, true);
+                    $('#sub_kategori').append(subKategoriOption).trigger('change');
+                    $('#sub_kategori_indonesia').val("{{ $produk->sub_kategori_indo }}");
+                }, 500);
             @endif
 
             @if (isset($produk) && $produk->penerbit)

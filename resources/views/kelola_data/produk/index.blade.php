@@ -139,6 +139,7 @@
                     <table class="table align-middle mb-0" id="produk" style="width: 100%">
                         <thead>
                             <tr>
+                                <th>Gambar</th>
                                 <th>Kd Produk</th>
                                 <th>Judul</th>
                                 <th>Penulis</th>
@@ -147,6 +148,7 @@
                                 <th>Supplier</th>
                                 <th>Stok</th>
                                 <th>Harga Modal</th>
+                                <th>Harga Jual</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -307,7 +309,29 @@
                 },
                 pageLength: 10,
                 searching: true,
+                scrollX: true,
                 columns: [{
+                        data: 'images',
+                        name: 'images',
+                        render: function(data) {
+                            if (data) {
+                                try {
+                                    const images = JSON.parse(data);
+                                    if (images.length > 0) {
+                                        // Ambil gambar pertama
+                                        const imageUrl = "{{ asset('storage/products') }}/" +
+                                            images[0];
+                                        return `<img src="${imageUrl}" class="product-thumbnail" alt="Product Image">`;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing images:', e);
+                                }
+                            }
+                            return '<img src="{{ asset('assets/images/no-image.png') }}" class="product-thumbnail" alt="No Image">';
+                        },
+                        orderable: false,
+                        searchable: false
+                    }, {
                         data: 'kd_produk',
                     }, {
                         data: 'judul',
@@ -327,6 +351,11 @@
                         render: function(data) {
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
+                    }, {
+                        data: 'harga_jual',
+                        render: function(data) {
+                            return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                        }
                     },
                     {
                         data: 'aksi',
@@ -339,7 +368,7 @@
                     },
                     {
                         className: "dt-body-center",
-                        targets: [0, 1, 2, 4, 5, 6]
+                        targets: [0, 1, 2, 4, 5, 6, 7]
                     }
                 ]
             });

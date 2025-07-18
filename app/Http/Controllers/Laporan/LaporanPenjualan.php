@@ -14,71 +14,68 @@ class LaporanPenjualan extends Controller
 {
     public function index()
     {
-        return view('laporan.penjualan.index');
+        $kasirs = DB::table('users')->where('role', '2')->get();
+        $customers = DB::table('customer')->get();
+
+        return view('laporan.penjualan.index', compact('kasirs', 'customers'));
     }
 
-    public function exportSalesReport(Request $request)
-{
+    public function export(Request $request)
+    {
+        $start_date = $request->get('tanggal_awal');
+        $end_date = $request->get('tanggal_akhir');
+        $kasir_id = $request->get('kasir');
+        $customer_id = $request->get('customer');
 
-    $start_date = $request->get('start_date');
-    $end_date = $request->get('end_date');
-    $product_id = $request->get('product_id');
-
-    // Export with the provided filters
-    return Excel::download(new SalesReportExport($start_date, $end_date, $product_id), 'laporan_penjualan.xlsx');
-}
+        return Excel::download(
+            new SalesReportExport($start_date, $end_date, $kasir_id, $customer_id),
+            'laporan_penjualan_' . date('YmdHis') . '.xlsx'
+        );
+    }
 
     public function load(Request $request)
     {
         try {
-            $query = DB::table('transaksidetails')
-                ->join('transaksi', 'transaksidetails.TransactionId', '=', 'transaksi.Id')
-                ->join('users', 'transaksi.user_id', '=', 'users.id')
+            $query = DB::table('transaksi')
+                ->leftJoin('users', 'transaksi.kasir', '=', 'users.id')
                 ->select(
-                    'transaksidetails.created_at',
-                    'users.name as nama_kasir',
-                    'transaksidetails.selling_price',
-                    'transaksidetails.nama_produk',
-                    'transaksidetails.Quantity',
-                    DB::raw('transaksidetails.selling_price * transaksidetails.Quantity as total')
-                );
+                    'transaksi.*',
+                    'users.name as kasir_name'
+                )
+                ->where(function ($query) {
+                    // Tambahkan kondisi where untuk payment_status
+                    $query->where('transaksi.payment_status', 'lunas');
+                });
 
-            if ($request->filled(['start_date', 'end_date'])) {
-                $query->whereBetween('transaksidetails.created_at', [
-                    Carbon::parse($request->start_date)->startOfDay(),
-                    Carbon::parse($request->end_date)->endOfDay()
+            // Apply filters
+            if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
+                $query->whereBetween('transaksi.created_at', [
+                    Carbon::parse($request->tanggal_awal)->startOfDay(),
+                    Carbon::parse($request->tanggal_akhir)->endOfDay()
                 ]);
             }
 
+            if ($request->filled('kasir')) {
+                $query->where('transaksi.kasir', $request->kasir);
+            }
 
+            if ($request->filled('customer')) {
+                $query->where('transaksi.nama_customer', $request->customer);
+            }
+
+            // Get totals for summary
+            $totalQuery = clone $query;
+            $totals = $totalQuery->select(
+                DB::raw('COUNT(*) as total_transaksi'),
+                DB::raw('SUM(total) as total_nilai')
+            )->first();
 
             return DataTables::of($query)
-                ->addIndexColumn()
-                ->editColumn('created_at', function($row) {
-                    return Carbon::parse($row->created_at)->format('d/m/Y H:i');
-                })
-                ->editColumn('selling_price', function($row) {
-                    return number_format($row->selling_price, 0, ',', '.');
-                })
-                ->editColumn('total', function($row) {
-                    return number_format($row->total, 0, ',', '.');
-                })
-                ->rawColumns(['created_at', 'selling_price', 'total'])
+                ->with([
+                    'total_transaksi' => $totals->total_transaksi ?? 0,
+                    'total_nilai' => $totals->total_nilai ?? 0
+                ])
                 ->make(true);
-
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    public function getProducts()
-    {
-        try {
-            $products = DB::table('products')
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get();
-            return response()->json(['products' => $products]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

@@ -158,6 +158,39 @@
             width: 5%;
         }
 
+        #potongan-input-container {
+            transition: all 0.3s ease;
+        }
+
+        #potongan-nominal {
+            width: 150px;
+            display: inline-block;
+        }
+
+        /* Dropship info styles */
+        .dropship-info {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .dropship-mode .dropship-info {
+            display: block;
+        }
+
+        .dropship-section {
+            margin-bottom: 15px;
+        }
+
+        .dropship-section h5 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
         /* Aksi */
     </style>
 </head>
@@ -292,8 +325,6 @@
                                         </div>
                                     </td>
                                 </tr>
-
-
                             </table>
                         </div>
                     </div>
@@ -367,6 +398,45 @@
                                     </td>
                                 </tr>
                             </table>
+
+                            <!-- Dropship Information Section -->
+                            <div class="dropship-info">
+                                <div class="dropship-section">
+                                    <h5>Informasi Pengirim</h5>
+                                    <div class="form-group">
+                                        <label for="nama_pengirim">Nama Pengirim</label>
+                                        <input type="text" class="form-control" name="nama_pengirim"
+                                            id="nama_pengirim">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="telepon_pengirim">No. Telepon Pengirim</label>
+                                        <input type="text" class="form-control" name="telepon_pengirim"
+                                            id="telepon_pengirim">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="alamat_pengirim">Alamat Pengirim</label>
+                                        <textarea class="form-control" name="alamat_pengirim" id="alamat_pengirim" rows="2"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="dropship-section">
+                                    <h5>Informasi Penerima</h5>
+                                    <div class="form-group">
+                                        <label for="nama_penerima">Nama Penerima</label>
+                                        <input type="text" class="form-control" name="nama_penerima"
+                                            id="nama_penerima">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="telepon_penerima">No. Telepon Penerima</label>
+                                        <input type="text" class="form-control" name="telepon_penerima"
+                                            id="telepon_penerima">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="alamat_penerima">Alamat Penerima</label>
+                                        <textarea class="form-control" name="alamat_penerima" id="alamat_penerima" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -432,7 +502,32 @@
                                         </div>
                                     </td>
                                 </tr>
-
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="potongan-harga">Potongan Harga</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="potongan-check"
+                                                    name="potongan_check">
+                                                <label class="form-check-label" for="potongan-check">Berikan
+                                                    Potongan</label>
+                                            </div>
+                                            <div id="potongan-input-container"
+                                                style="display: none; margin-top: 10px;">
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Rp</span>
+                                                    </div>
+                                                    <input type="text" class="form-control" id="potongan-nominal"
+                                                        name="potongan_nominal" placeholder="Nominal Potongan">
+                                                </div>
+                                                <small class="text-muted">Masukkan nominal potongan harga</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
                                         <label for="diskon-check">Diskon</label>
@@ -476,6 +571,7 @@
                                 </tr>
                             </table>
                             <input type="hidden" name="discount" value="0">
+                            <input type="hidden" name="potongan" value="0">
                             <div align="right">
                                 <button type="submit" name="simpan" id="simpan" class="btn btn-primary">
                                     <i class="fa fa-paper-plane"></i> Simpan
@@ -626,6 +722,42 @@
                     $('#ekspedisi-lain-container').hide();
                 }
             });
+
+            // Handle dropship mode toggle
+            $('#dropship-mode').change(function() {
+                if ($(this).is(':checked')) {
+                    // Disable customer selection
+                    $('#customer').prop('disabled', true).val('').trigger('change');
+                    $('.input-group-append button').prop('disabled', true);
+
+                    // Show dropship info fields
+                    $('.dropship-info').show();
+
+                    // Make ekspedisi required
+                    $('#ekspedisi').prop('required', true);
+
+                    // Show custom price column
+                    $('body').addClass('dropship-mode');
+
+                    toastr.info('Mode Dropship aktif - Harap isi informasi pengirim dan penerima', 'Info');
+                } else {
+                    // Enable customer selection
+                    $('#customer').prop('disabled', false);
+                    $('.input-group-append button').prop('disabled', false);
+
+                    // Hide dropship info fields
+                    $('.dropship-info').hide();
+
+                    // Make ekspedisi not required
+                    $('#ekspedisi').prop('required', false);
+
+                    // Hide custom price column
+                    $('body').removeClass('dropship-mode');
+
+                    toastr.info('Mode Dropship dinonaktifkan', 'Info');
+                }
+            });
+
             toastr.options = {
                 "closeButton": true,
                 "debug": false,
@@ -742,22 +874,35 @@
                     toastr.error('Terdapat produk dengan quantity melebihi stok', 'Error!');
                     return false;
                 }
+
+                // Validasi dropship mode
+                if ($('#dropship-mode').is(':checked')) {
+                    // Validate dropship fields
+                    if (!$('#nama_pengirim').val() || !$('#telepon_pengirim').val() || !$(
+                            '#alamat_pengirim').val() ||
+                        !$('#nama_penerima').val() || !$('#telepon_penerima').val() || !$(
+                            '#alamat_penerima').val()) {
+                        toastr.error('Harap lengkapi semua informasi pengirim dan penerima untuk dropship',
+                            'Error!');
+                        return false;
+                    }
+
+                    if (!$('#ekspedisi').val()) {
+                        toastr.error('Ekspedisi harus dipilih untuk mode dropship', 'Error!');
+                        return false;
+                    }
+                }
+
                 // Validasi minimal ada 1 item di cart
                 if ($('#cart_table tr').length === 0) {
                     toastr.error('Minimal harus ada 1 produk dalam transaksi', 'Error!');
                     return;
                 }
 
-                // Validasi customer dipilih
-                if (!$('#customer').val()) {
+                // Validasi customer dipilih jika bukan dropship
+                if (!$('#dropship-mode').is(':checked') && !$('#customer').val()) {
                     toastr.error('Customer harus dipilih', 'Error!');
                     $('#customer').focus();
-                    return;
-                }
-
-                if ($('#dropship-mode').is(':checked') && !$('#ekspedisi').val()) {
-                    toastr.error('Ekspedisi harus dipilih untuk mode dropship', 'Error!');
-                    $('#ekspedisi').focus();
                     return;
                 }
 
@@ -802,6 +947,7 @@
                     ekspedisi = $('#ekspedisi_lain').val();
                 }
 
+                var potonganNominal = parseRupiah($('#potongan-nominal').val()) || 0;
 
                 // Siapkan data transaksi
                 var transaksiData = {
@@ -812,12 +958,20 @@
                     subtotal: parseRupiah($('#grand_total').text()),
                     total: parseRupiah($('#total').val()),
                     paid_amount: parseRupiah($('#bayar').val()),
-                    used_deposit: usedDeposit,
+                    used_deposit: depositUsed,
                     diskon_persen: parseFloat($('#diskon-persen').val()) || 0,
                     notes: $('#catatan').val() || '',
                     ekspedisi: $('#ekspedisi').val(),
                     ekspedisi_lain: $('#ekspedisi').val() === 'Lainnya' ? $('#ekspedisi_lain').val() :
                         null,
+                    potongan: potonganNominal,
+                    is_dropship: $('#dropship-mode').is(':checked') ? '1' : '0',
+                    nama_pengirim: $('#nama_pengirim').val() || "",
+                    telepon_pengirim: $('#telepon_pengirim').val() || "",
+                    alamat_pengirim: $('#alamat_pengirim').val() || "",
+                    nama_penerima: $('#nama_penerima').val() || "",
+                    telepon_penerima: $('#telepon_penerima').val() || "",
+                    alamat_penerima: $('#alamat_penerima').val() || "",
                 };
 
                 // Jika metode DP, pastikan payment_method adalah 'dp'
@@ -1018,8 +1172,6 @@
                     }
                 }
 
-
-
                 // Trigger change event untuk update Select2
                 $('#customer').trigger('change');
 
@@ -1061,10 +1213,7 @@
                 }
             }
 
-
-
             // Submit form customer
-            // Submit form customer - versi hanya toast
             $('#form-customer').on('submit', function(e) {
                 e.preventDefault();
 
@@ -1170,8 +1319,6 @@
                 $('#nama').focus();
             });
 
-
-
             function formatCustomer(customer) {
                 if (customer.loading) return customer.text;
 
@@ -1188,7 +1335,6 @@
             function formatCustomerSelection(customer) {
                 return customer.text.split(' | ')[0] || customer.text;
             }
-
 
             $('#customer').select2({
                 theme: 'bootstrap',
@@ -1325,14 +1471,12 @@
             }
 
             // Fungsi untuk konversi dari format Rupiah ke angka
-            // Fungsi untuk konversi dari format Rupiah ke angka
             function parseRupiah(rupiah) {
                 if (!rupiah) return 0;
                 // Handle jika sudah dalam bentuk angka
                 if (!isNaN(rupiah)) return parseFloat(rupiah);
                 return parseFloat(rupiah.replace(/[^0-9]/g, ''));
             }
-
 
             // Select all checkbox
             $('#select-all').on('click', function() {
@@ -1394,7 +1538,6 @@
                 // Tutup modal
                 $('#modal-produk').modal('hide');
             });
-
 
             function addToCart(products) {
                 products.forEach(function(product) {
@@ -1500,8 +1643,29 @@
                 var subtotal = harga * qty;
                 row.find('.subtotal').text(formatRupiah(subtotal));
             }
-            // Fungsi untuk update grand total
-            // Ganti fungsi updateGrandTotal() yang ada dengan yang ini:
+
+            $('#potongan-check').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#potongan-input-container').show();
+                    $('#potongan-nominal').val('0').focus();
+                } else {
+                    $('#potongan-input-container').hide();
+                    $('#potongan-nominal').val('0');
+                }
+                updateGrandTotal();
+            });
+
+            // Format input potongan nominal
+            $('#potongan-nominal').on('keyup', function(e) {
+                $(this).val(formatRupiahInput($(this).val(), ''));
+            });
+
+            $('#potongan-nominal').on('blur', function() {
+                var value = parseRupiah($(this).val());
+                $(this).val(formatRupiah(value));
+                updateGrandTotal();
+            });
+
             function updateGrandTotal() {
                 var grandTotal = 0;
 
@@ -1512,6 +1676,14 @@
                     grandTotal += parseFloat(subtotalText) || 0;
                 });
 
+                // Calculate potongan harga if any
+                var potonganNominal = 0;
+                if ($('#potongan-check').is(':checked')) {
+                    potonganNominal = parseRupiah($('#potongan-nominal').val()) || 0;
+                    if (potonganNominal < 0) potonganNominal = 0;
+                    if (potonganNominal > grandTotal) potonganNominal = grandTotal;
+                }
+
                 // Calculate discount if any
                 var diskonPersen = 0;
                 var diskonNominal = 0;
@@ -1520,24 +1692,33 @@
                     diskonPersen = parseFloat($('#diskon-persen').val()) || 0;
                     if (diskonPersen < 0) diskonPersen = 0;
                     if (diskonPersen > 100) diskonPersen = 100;
-                    diskonNominal = grandTotal * (diskonPersen / 100);
+                    diskonNominal = (grandTotal - potonganNominal) * (diskonPersen / 100);
                 }
 
-                var totalSetelahDiskon = grandTotal - diskonNominal;
+                var totalSetelahPotonganDanDiskon = grandTotal - potonganNominal - diskonNominal;
 
                 // Update grand_total display
                 $('#grand_total').text(formatRupiah(grandTotal));
 
                 // Update total field (before deposit/payment)
-                $('#total').val(formatRupiah(totalSetelahDiskon));
+                $('#total').val(formatRupiah(totalSetelahPotonganDanDiskon));
 
                 // Update values for server submission
                 $('input[name="subtotal"]').val(grandTotal);
+                $('input[name="potongan"]').val(potonganNominal);
                 $('input[name="discount"]').val(diskonNominal);
-                $('input[name="total"]').val(totalSetelahDiskon);
+                $('input[name="total"]').val(totalSetelahPotonganDanDiskon);
 
                 calculateKembalian();
             }
+
+            $('#potongan-nominal').on('input change', function() {
+                var value = parseRupiah($(this).val()) || 0;
+                if (value < 0) {
+                    $(this).val(0);
+                }
+                updateGrandTotal();
+            });
 
             // Event handler untuk input persentase diskon
             $('#diskon-persen').on('input change', function() {

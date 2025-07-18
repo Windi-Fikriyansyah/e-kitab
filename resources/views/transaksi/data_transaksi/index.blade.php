@@ -124,6 +124,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <a href="#" id="printInvoiceBtn" class="btn btn-info me-auto" target="_blank">
+                        <i class="fas fa-print"></i> Cetak Invoice
+                    </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
@@ -350,6 +353,9 @@
                                 'id-ID')
                         );
 
+                        $('#printInvoiceBtn').attr('href',
+                            "{{ route('transaksi.data_transaksi.cetak_invoice', '') }}/" +
+                            transaksi.id);
                         // Fill items table
                         var itemsHtml = '';
                         $.each(items, function(index, item) {

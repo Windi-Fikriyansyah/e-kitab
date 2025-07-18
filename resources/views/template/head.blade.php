@@ -41,6 +41,79 @@
 
 
     <style>
+        #produk td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        /* Khusus untuk kolom tertentu */
+        #produk td:nth-child(3) {
+            /* Kolom Judul */
+            max-width: 250px;
+        }
+
+        #produk td:nth-child(4) {
+            /* Kolom Penulis */
+            max-width: 150px;
+        }
+
+        #produk td:nth-child(5) {
+            /* Kolom Kategori */
+            max-width: 120px;
+        }
+
+        #produk td:nth-child(6) {
+            /* Kolom Penerbit */
+            max-width: 150px;
+        }
+
+        #produk td:nth-child(7) {
+            /* Kolom Supplier */
+            max-width: 150px;
+        }
+
+        /* Tooltip untuk text penuh saat hover */
+        .tooltip-text {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip-text:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip-text:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+            z-index: 1000;
+        }
+
+        .product-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
         #overlay {
             position: fixed;
             top: 0;

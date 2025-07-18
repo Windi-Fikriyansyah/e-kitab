@@ -63,7 +63,7 @@ class DataTransaksiController extends Controller
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
                 $detailButton = '<button class="btn btn-sm btn-primary right-gap detail-btn" data-url="' . route('transaksi.data_transaksi.detail', Crypt::encrypt($row->id)) . '"><i class="fas fa-eye"></i></button>';
-
+                $printButton = '<a href="' . route('transaksi.data_transaksi.cetak_invoice', $row->id) . '" class="btn btn-sm btn-info right-gap" target="_blank"><i class="fas fa-print"></i></a>';
                 $payButton = '';
                 if ($row->payment_status == 'hutang') {
                     $payButton = '<button class="btn btn-sm btn-success right-gap pay-btn" data-url="' . route('transaksi.data_transaksi.pay', Crypt::encrypt($row->id)) . '" data-remaining="' . $row->remaining_amount . '"><i class="fas fa-money-bill-wave"></i> Bayar</button>';
@@ -73,12 +73,12 @@ class DataTransaksiController extends Controller
                 if ($row->payment_status != 'lunas') {
                     $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('transaksi.data_transaksi.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
                 }
-                return $detailButton . $payButton . $deleteButton;
+                return $detailButton . $printButton . $payButton . $deleteButton;
             })
             ->editColumn('total', function ($row) {
                 if ($row->payment_status === 'hutang') {
                     return 'Rp ' . number_format($row->paid_amount, 0, ',', '.') .
-                        ' / Rp ' . number_format($row->total, 0, ',', '.');
+                        ' / Rp ' . number_format($row->remaining_amount, 0, ',', '.');
                 }
                 return 'Rp ' . number_format($row->total, 0, ',', '.');
             })
@@ -98,6 +98,26 @@ class DataTransaksiController extends Controller
             ->make(true);
     }
 
+    public function cetakInvoice($id)
+    {
+
+        $transaksi = DB::table('transaksi')
+            ->where('id', $id)
+            ->first();
+
+        if (!$transaksi) {
+            abort(404);
+        }
+
+        $items = DB::table('transaksi_items')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('id_transaksi', $id)
+            ->select('transaksi_items.*', 'produk.judul', 'produk.penulis')
+            ->get();
+        $profilPerusahaan = DB::table('profile_perusahaan')->first();
+
+        return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items', 'profilPerusahaan'));
+    }
     public function pay(Request $request, $id)
     {
         try {

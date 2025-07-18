@@ -50,16 +50,22 @@ class Dashboard extends Controller
             ->join('transaksi_items', 'produk.kd_produk', '=', 'transaksi_items.kd_produk')
             ->join('transaksi', 'transaksi_items.id_transaksi', '=', 'transaksi.id')
             ->where('transaksi.payment_status', 'lunas')
-            ->select('produk.*', DB::raw('SUM(transaksi_items.quantity) as total_sold'))
-            ->groupBy(
+            ->select(
                 'produk.id',
                 'produk.kd_produk',
                 'produk.judul',
                 'produk.harga_jual',
                 'produk.kategori',
                 'produk.stok',
-                'produk.created_at',
-                'produk.updated_at'
+                DB::raw('SUM(transaksi_items.quantity) as total_sold')
+            )
+            ->groupBy(
+                'produk.id',
+                'produk.kd_produk',
+                'produk.judul',
+                'produk.harga_jual',
+                'produk.kategori',
+                'produk.stok'
             )
             ->orderByDesc('total_sold')
             ->limit(5)

@@ -1,8 +1,8 @@
 @extends('template.app')
-@section('title', 'Customer')
+@section('title', 'Sub Kategori')
 @section('content')
     <div class="page-heading">
-        <h3>Customer</h3>
+        <h3>Sub Kategori</h3>
     </div>
     <div class="page-content">
         @if (session('message'))
@@ -15,10 +15,10 @@
             <div class="card-header">
                 <div class="d-flex align-items-center">
                     <div>
-                        <h5 class="card-title">Customer</h5>
+                        <h5 class="card-title">Sub Kategori</h5>
                     </div>
                     <div class="dropdown ms-auto">
-                        <a href="{{ route('kelola_data.customer.create') }}" class="btn btn-success">Tambah</a>
+                        <a href="{{ route('kelola_data.sub_kategori.create') }}" class="btn btn-success">Tambah</a>
 
 
                     </div>
@@ -26,14 +26,14 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table align-middle mb-0" id="customer" style="width: 100%">
+                    <table class="table align-middle mb-0" id="sub_kategori" style="width: 100%">
                         <thead>
                             <tr>
-                                <th>No</th>
-                                <th>Nama</th>
-                                <th>No Hp</th>
-                                <th>Alamat</th>
-                                <th>Aksi</th>
+                                <th class="text-center" style="width: 5%;">No</th>
+                                <th style="width: 35%;">Nama Kategori</th>
+                                <th style="width: 35%;">الفنون</th>
+                                <th style="width: 35%;">Nama Sub Kategori (Indonesia)</th>
+                                <th style="width: 25%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -72,12 +72,16 @@
                 }
             });
 
-            $('#customer').DataTable({
+            $('#sub_kategori').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('kelola_data.customer.load') }}",
+                    url: "{{ route('kelola_data.sub_kategori.load') }}",
                     type: "POST",
+                    data: function(d) {
+                        // Send additional parameters if needed
+                        d.search_value = d.search.value;
+                    }
                 },
                 pageLength: 10,
                 searching: true,
@@ -86,32 +90,40 @@
                         name: 'DT_RowIndex',
                         orderable: false,
                         searchable: false,
-                        className: 'text-center'
-                    }, {
-                        data: 'nama',
+                        width: '5%',
                         className: 'text-center'
                     },
                     {
-                        data: 'no_hp',
-                        render: function(data) {
-                            // Add +62 if the number doesn't already start with it
-                            return data ? (data.startsWith('+62') ? data : '+62' + data) : '';
-                        },
+                        data: 'nama_kategori',
+                        name: 'kategori.nama_arab',
+                        width: '35%',
                         className: 'text-center'
                     },
                     {
-                        data: 'alamat',
+                        data: 'nama_arab',
+                        name: 'sub_kategori.nama_arab',
+                        width: '35%',
+                        className: 'text-center'
+                    },
+                    {
+                        data: 'nama_indonesia',
+                        name: 'sub_kategori.nama_indonesia',
+                        width: '35%',
                         className: 'text-center'
                     },
                     {
                         data: 'aksi',
+                        name: 'aksi',
+                        orderable: false,
+                        searchable: false,
+                        width: '25%',
                         className: 'text-center'
                     }
                 ],
-                columnDefs: [{
-                    className: "dt-head-center",
-                    targets: ['_all']
-                }]
+                language: {
+                    search: "Cari:",
+                    searchPlaceholder: "Masukkan kata kunci..."
+                }
             });
 
 
@@ -144,7 +156,7 @@
                                         'Data berhasil dihapus.',
                                         'success'
                                     );
-                                    $('#customer').DataTable().ajax.reload();
+                                    $('#sub_kategori').DataTable().ajax.reload();
                                 } else {
                                     Swal.fire(
                                         'Error!',

@@ -68,18 +68,21 @@ class TransaksiPenjualanController extends Controller
             ->where('id_transaksi', $id)
             ->select('transaksi_items.*', 'produk.judul', 'produk.penulis')
             ->get();
+        $profilPerusahaan = DB::table('profile_perusahaan')->first();
 
-        return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items'));
+        return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items', 'profilPerusahaan'));
     }
 
     public function simpanTransaksi(Request $request)
     {
 
+
+
         DB::beginTransaction();
         try {
             // Validasi input
             $request->validate([
-                'customer' => 'required|exists:customer,id',
+                'customer' => 'nullable|exists:customer,id',
                 'payment_method' => 'required|in:tunai,transfer,dp',
                 'payment_status' => 'required|in:lunas,hutang',
                 'items' => 'required|array|min:1',
@@ -95,6 +98,14 @@ class TransaksiPenjualanController extends Controller
                 'ekspedisi' => 'nullable|string|max:255',
                 'ekspedisi_lain' => 'nullable|required_if:ekspedisi,Lainnya|string|max:255',
                 'notes' => 'nullable|string',
+                'potongan' => 'numeric|min:0',
+                'is_dropship' => 'sometimes|boolean',
+                'nama_pengirim' => 'nullable|string|max:255',
+                'telepon_pengirim' => 'nullable|string|max:20',
+                'alamat_pengirim' => 'nullable|string',
+                'nama_penerima' => 'nullable|string|max:255',
+                'telepon_penerima' => 'nullable|string|max:20',
+                'alamat_penerima' => 'nullable|string',
 
             ]);
 
@@ -104,13 +115,16 @@ class TransaksiPenjualanController extends Controller
             $kodeTransaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
 
             $customer = DB::table('customer')->where('id', $request->customer)->first();
-            if (!$customer) {
-                throw new \Exception('Customer tidak ditemukan');
-            }
+
 
             $ekspedisi = $request->ekspedisi === 'Lainnya' ? $request->ekspedisi_lain : $request->ekspedisi;
 
-            $depositTersedia = $customer->deposit;
+            if (!$customer) {
+                // Jika customer tidak ditemukan, lanjutkan dengan nilai default deposit 0
+                $depositTersedia = 0;
+            } else {
+                $depositTersedia = $customer->deposit;
+            }
             $requestedDeposit = $request->used_deposit;
             $totalTransaksi = $request->total;
 
@@ -132,6 +146,7 @@ class TransaksiPenjualanController extends Controller
                 'payment_status' => $request->payment_status,
                 'subtotal' => $request->subtotal,
                 'discount' => $request->diskon_persen ?? 0,
+                'potongan' => $request->potongan ?? 0,
                 'total' => $request->total,
                 'paid_amount' => $request->paid_amount,
                 'remaining_amount' => $remainingAmount,
@@ -139,6 +154,14 @@ class TransaksiPenjualanController extends Controller
                 'notes' => $request->notes,
                 'created_at' => now(),
                 'updated_at' => now(),
+                'kasir' => auth()->user()->id,
+                'is_dropship' => $request->is_dropship ?? 0,
+                'nama_pengirim' => $request->nama_pengirim,
+                'telepon_pengirim' => $request->telepon_pengirim,
+                'alamat_pengirim' => $request->alamat_pengirim,
+                'nama_penerima' => $request->nama_penerima,
+                'telepon_penerima' => $request->telepon_penerima,
+                'alamat_penerima' => $request->alamat_penerima,
             ]);
 
             // Simpan item transaksi

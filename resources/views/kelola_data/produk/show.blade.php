@@ -19,37 +19,42 @@
                                 <td>{{ $produk->kd_produk }}</td>
                             </tr>
                             <tr>
-                                <th>Judul</th>
-                                <td>{{ $produk->judul }}</td>
-                            </tr>
-                            <tr>
-                                <th>Kategori</th>
+                                <th>الفنون</th>
                                 <td>{{ $produk->kategori }}</td>
                             </tr>
                             <tr>
-                                <th>Penerbit</th>
+                                <th>العنوان</th>
+                                <td>{{ $produk->judul }}</td>
+                            </tr>
+                            <tr>
+                                <th>المؤلف</th>
+                                <td>{{ $produk->penulis }}</td>
+                            </tr>
+                            <tr>
+                                <th>التحقيق والتعليق والاعتناء والتقديم</th>
+                                <td>{{ $produk->editor }}</td>
+                            </tr>
+                            <tr>
+                                <th>الناشر</th>
                                 <td>{{ $produk->penerbit }}</td>
                             </tr>
                             <tr>
-                                <th>Cover</th>
+                                <th>التجليد</th>
                                 <td>{{ $produk->cover }}</td>
                             </tr>
                             <tr>
-                                <th>Kertas</th>
+                                <th>الورق</th>
                                 <td>{{ $produk->kertas }}</td>
                             </tr>
                             <tr>
-                                <th>Kualitas</th>
+                                <th>الجودة</th>
                                 <td>{{ $produk->kualitas }}</td>
                             </tr>
                             <tr>
-                                <th>Harakat</th>
+                                <th>التشكيل</th>
                                 <td>{{ $produk->harakat }}</td>
                             </tr>
-                            <tr>
-                                <th>Penulis</th>
-                                <td>{{ $produk->penulis }}</td>
-                            </tr>
+
                             {{-- Tampilkan kolom dinamis untuk data Arab --}}
                             @if (isset($dynamicColumns))
                                 @foreach ($dynamicColumns as $column)

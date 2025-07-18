@@ -87,6 +87,10 @@
                     },
                     {
                         data: 'telepon',
+                        render: function(data) {
+                            // Add +62 if the number doesn't already start with it
+                            return data ? (data.startsWith('+62') ? data : '+62' + data) : '';
+                        },
                         className: 'text-center',
                     },
                     {

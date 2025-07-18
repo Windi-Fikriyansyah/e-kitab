@@ -35,7 +35,9 @@ class ProdukController extends Controller
                 'produk.penerbit',
                 'supplier.nama_supplier as supplier',
                 'produk.stok',
-                'produk.harga_modal'
+                'produk.harga_modal',
+                'produk.images',
+                'produk.harga_jual'
             ]);
 
         // Filter untuk setiap kolom
@@ -81,7 +83,7 @@ class ProdukController extends Controller
                 $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('kelola_data.produk.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
                 return $viewButton . $editButton . $barcodeButton . $deleteButton;
             })
-            ->rawColumns(['aksi'])
+            ->rawColumns(['aksi', 'images'])
             ->make(true);
     }
 
@@ -135,7 +137,7 @@ class ProdukController extends Controller
             $columns = DB::getSchemaBuilder()->getColumnListing('produk');
 
             // Filter kolom yang tidak ingin ditampilkan
-            $excludedColumns = ['id', 'kd_produk', 'images', 'penulis', 'created_at', 'updated_at', 'deleted_at'];
+            $excludedColumns = ['id', 'kd_produk', 'sub_kategori', 'images', 'penulis', 'created_at', 'updated_at', 'deleted_at'];
             $dynamicColumns = array_diff($columns, $excludedColumns);
 
             return response()->json([
@@ -181,6 +183,7 @@ class ProdukController extends Controller
                 'kd_produk',
                 'judul',
                 'kategori',
+                'sub_kategori',
                 'penerbit',
                 'cover',
                 'kertas',
@@ -226,6 +229,8 @@ class ProdukController extends Controller
             'judul_indonesia' => 'required|string|max:255',
             'kategori' => 'required',
             'kategori_indonesia' => 'required',
+            'sub_kategori' => 'required',
+            'sub_kategori_indonesia' => 'required',
             'penerbit' => 'required',
             'penerbit_indonesia' => 'required',
             'cover' => 'required',
@@ -250,6 +255,7 @@ class ProdukController extends Controller
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
             'judul_indonesia.required' => 'Judul produk (Indonesia) wajib diisi',
             'kategori.required' => 'Kategori wajib dipilih',
+            'sub_kategori.required' => 'Sub Kategori wajib dipilih',
             'penerbit.required' => 'Penerbit wajib dipilih',
             'cover.required' => 'Cover wajib dipilih',
             'kertas.required' => 'Kertas wajib dipilih',
@@ -300,6 +306,7 @@ class ProdukController extends Controller
                 'kd_produk' => $kd_produk,
                 'judul' => $request->judul_arab,
                 'kategori' => $request->kategori,
+                'sub_kategori' => $request->sub_kategori,
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -337,6 +344,7 @@ class ProdukController extends Controller
                 'id_produk' => $produkId,
                 'judul_indo' => $request->judul_indonesia,
                 'kategori_indo' => $request->kategori_indonesia,
+                'sub_kategori_indo' => $request->sub_kategori_indonesia,
                 'penerbit_indo' => $request->penerbit_indonesia,
                 'cover_indo' => $request->cover_indonesia,
                 'kertas_indo' => $request->kertas_indonesia,
@@ -645,6 +653,46 @@ class ProdukController extends Controller
         return response()->json($data);
     }
 
+    public function getSubKategori(Request $request)
+    {
+        $term = $request->q;
+        $kategori = $request->kategori;
+
+        $query = DB::table('sub_kategori');
+
+        if ($kategori) {
+            // Cari kategori berdasarkan nama_arab
+            $kategoriData = DB::table('kategori')
+                ->where('nama_arab', $kategori)
+                ->first();
+
+            if ($kategoriData) {
+                $query->where('id_kategori', $kategoriData->id);
+            }
+        }
+
+        if ($term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('nama_arab', 'like', '%' . $term . '%')
+                    ->orWhere('nama_indonesia', 'like', '%' . $term . '%');
+            });
+        }
+
+        $subKategoris = $query->get();
+
+        $results = [];
+        foreach ($subKategoris as $subKategori) {
+            $results[] = [
+                'id' => $subKategori->nama_arab,
+                'text' => $subKategori->nama_arab . ' | ' . $subKategori->nama_indonesia,
+                'nama_arab' => $subKategori->nama_arab,
+                'nama_indonesia' => $subKategori->nama_indonesia
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function getpenerbit(Request $request)
     {
         $search = $request->q;
@@ -812,6 +860,28 @@ class ProdukController extends Controller
             return [
                 'id' => $item->id,
                 'text' => $item->nama_supplier . ' | ' . $item->telepon
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    public function getukuran(Request $request)
+    {
+        $search = $request->q;
+
+        $ukuran = DB::table('ukuran')
+            ->select('id', 'ukuran')
+            ->when(!empty($search), function ($query) use ($search) {
+                $query->where('ukuran', 'LIKE', "%{$search}%");
+            })
+            ->limit(10)
+            ->get();
+
+        $data = $ukuran->map(function ($item) {
+            return [
+                'id' => $item->ukuran,
+                'text' => $item->ukuran
             ];
         });
 

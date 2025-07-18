@@ -160,16 +160,25 @@
     <div class="invoice-box">
         <div class="header">
             <div>
-                <img src="{{ asset('storage/images/logo1.JPG') }}" alt="Dar Ibn Abbas Logo" class="logo">
-                <h1>Dar Ibn Abbas</h1>
-                <p>Jl. Jakarta Barat No. 123<br>
+                @if ($profilPerusahaan && $profilPerusahaan->logo)
+                    <img src="{{ asset('storage/' . $profilPerusahaan->logo) }}"
+                        alt="{{ $profilPerusahaan->nama_toko }} Logo" class="logo">
+                @endif
+                <h1>{{ $profilPerusahaan->nama_toko ?? 'Dar Ibn Abbas' }}</h1>
+                <p>{{ $profilPerusahaan->alamat ?? 'Jl. Jakarta Barat No. 123' }}<br>
                     Jakarta, Indonesia<br>
-                    Telp: +62895806109754</p>
+                    Telp: +62{{ $profilPerusahaan->no_wa ?? '+62895806109754' }}</p>
                 <div class="social-media">
                     <p>Website: daribnuabbas.com</p>
-                    <p>Instagram: @daribnuabbas</p>
-                    <p>Telegram: @daribnuabbas</p>
-                    <p>WhatsApp: +62895806109754</p>
+                    @if ($profilPerusahaan && $profilPerusahaan->ig)
+                        <p>Instagram: {{ $profilPerusahaan->ig }}</p>
+                    @endif
+                    @if ($profilPerusahaan && $profilPerusahaan->telegram)
+                        <p>Telegram: {{ $profilPerusahaan->telegram }}</p>
+                    @endif
+                    @if ($profilPerusahaan && $profilPerusahaan->no_wa)
+                        <p>WhatsApp: +62{{ $profilPerusahaan->no_wa }}</p>
+                    @endif
                 </div>
             </div>
             <div class="company-info">
@@ -185,7 +194,7 @@
                 <h3>Informasi Customer</h3>
                 <p><strong>Nama:</strong> {{ $transaksi->nama_customer }}</p>
                 <p>
-                    <stronwg>No. HP:</stronwg> {{ $transaksi->no_hp_customer }}
+                    <stronwg>No. HP:</stronwg> +62{{ $transaksi->no_hp_customer }}
                 </p>
                 <p><strong>Alamat:</strong> {{ $transaksi->alamat_customer }}</p>
                 <p><strong>Metode Pembayaran:</strong> {{ ucfirst($transaksi->payment_method) }}</p>
@@ -201,7 +210,7 @@
                     @endif
                 </p>
                 <p><strong>Nama Penerima:</strong> {{ $transaksi->nama_customer }}</p>
-                <p><strong>No. HP Penerima:</strong> {{ $transaksi->no_hp_customer }}</p>
+                <p><strong>No. HP Penerima:</strong> +62{{ $transaksi->no_hp_customer }}</p>
                 <p><strong>Alamat Pengiriman:</strong> {{ $transaksi->alamat_customer }}</p>
                 <p><strong>Catatan:</strong> Packing rapat dan aman</p>
             </div>
@@ -247,6 +256,12 @@
                     <td width="80%"><strong>Subtotal</strong></td>
                     <td class="text-right">Rp {{ number_format($transaksi->subtotal, 0, ',', '.') }}</td>
                 </tr>
+                @if ($transaksi->potongan > 0)
+                    <tr>
+                        <td><strong>Potongan Harga</strong></td>
+                        <td class="text-right">- Rp {{ number_format($transaksi->potongan, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
                 @if ($transaksi->discount > 0)
                     <tr>
                         <td><strong>Diskon ({{ $transaksi->discount }}%)</strong></td>
@@ -277,12 +292,31 @@
             </table>
         </div>
 
+
+
         <div class="footer">
-            <p>Terima kasih telah berbelanja di Dar Ibn Abbas</p>
+            <p>Terima kasih telah berbelanja di {{ $profilPerusahaan->nama_toko ?? 'Dar Ibn Abbas' }}</p>
             <p>Barang yang sudah dibeli tidak dapat dikembalikan kecuali ada kerusakan</p>
             <div class="social-media">
-                <p>Website: daribnuabbas.com | Instagram: @daribnuabbas</p>
-                <p>Telegram: @daribnuabbas | WhatsApp: +62895806109754</p>
+                @if ($profilPerusahaan && ('daribnuabbas.com' || $profilPerusahaan->ig))
+                    <p>
+
+                        Website: daribnuabbas.com
+                        @if ($profilPerusahaan->ig)
+                            | Instagram: {{ $profilPerusahaan->ig }}
+                        @endif
+                    </p>
+                @endif
+                @if ($profilPerusahaan && ($profilPerusahaan->telegram || $profilPerusahaan->no_wa))
+                    <p>
+                        @if ($profilPerusahaan->telegram)
+                            Telegram: {{ $profilPerusahaan->telegram }}
+                        @endif
+                        @if ($profilPerusahaan->no_wa)
+                            | WhatsApp: +62{{ $profilPerusahaan->no_wa }}
+                        @endif
+                    </p>
+                @endif
             </div>
         </div>
 
