@@ -30,7 +30,7 @@
         <div class="card">
             <div class="card-body">
                 <form id="produkForm"
-                    action="{{ isset($produk) ? route('kelola_data.produk.update', Crypt::encrypt($produk->id)) : route('kelola_data.produk.store') }}"
+                    action="{{ isset($produk) ? route('kelola_data.produk.update', Crypt::encrypt($produk->id_produk_asli)) : route('kelola_data.produk.store') }}"
                     method="POST" enctype="multipart/form-data">
                     @csrf
                     @if (isset($produk))
@@ -384,6 +384,13 @@
                                 </div>
                             </div>
                         @endif
+                    </div>
+
+                    <div class="form-group">
+                        <label for="link_youtube">Link Youtube</label>
+                        <input type="url" name="link_youtube" id="link_youtube" class="form-control"
+                            placeholder="https://www.youtube.com/watch?v=example"
+                            value="{{ old('link_youtube', $produk->link_youtube ?? '') }}">
                     </div>
 
                     <div id="dynamicFieldsContainer">

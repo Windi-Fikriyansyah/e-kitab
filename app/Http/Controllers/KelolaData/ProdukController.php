@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
 
 
 class ProdukController extends Controller
@@ -21,6 +23,176 @@ class ProdukController extends Controller
         return view('kelola_data.produk.index', compact('kategoris', 'penerbits', 'suppliers', 'penulis'));
     }
 
+    public function api_index(Request $request)
+    {
+        try {
+            $query = DB::table('produk')
+                ->leftJoin('produk_indo', 'produk_indo.id_produk', '=', 'produk.id')
+                ->select([
+                    'produk.id',
+                    'produk.judul',
+                    'produk_indo.judul_indo',
+                    'produk.kategori',
+                    'produk.sub_kategori',
+                    'produk.penulis',
+                    'produk.stok',
+                    'produk.images',
+                    'produk.harga_jual',
+                    'produk.harga_modal',
+                    'produk.created_at',
+                    'produk.link_youtube',
+                ]);
+
+            // Tambahkan filter jika ada parameter kategori
+            if ($request->has('kategori')) {
+                $query->where('produk.kategori', $request->kategori);
+            }
+
+            // Tambahkan filter jika ada parameter subkategori
+            if ($request->has('subkategori')) {
+                $query->where('produk.sub_kategori', $request->subkategori);
+            }
+
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = '%' . $request->search . '%';
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('produk.judul', 'like', $searchTerm)
+                        ->orWhere('produk_indo.judul_indo', 'like', $searchTerm)
+                        ->orWhere('produk.penulis', 'like', $searchTerm)
+                        ->orWhere('produk.kategori', 'like', $searchTerm);
+                });
+            }
+
+
+            $total = $query->count();
+
+            $limit = $request->input('limit', 10); // Default 10 jika tidak diset
+            $offset = $request->input('offset', 0); // Default 0 jika tidak diset
+
+            $query->limit($limit)->offset($offset);
+
+            $query->orderBy('produk.created_at', 'desc');
+
+            $produk = $query->get();
+
+            $produk->transform(function ($item) {
+                $item->images = $this->processImages($item->images);
+                $titleForSlug = $item->judul_indo ?? $item->judul;
+                $item->slug = Str::slug($titleForSlug) . '-' . $item->id;
+                $item->meta_description = substr(strip_tags($item->judul_indo), 0, 160);
+                return $item;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data produk berhasil diambil',
+                'data' => $produk,
+                'total' => $total,
+                'current_limit' => $limit,
+                'current_offset' => $offset,
+                'seo' => [
+                    'title' => 'Koleksi Kitab Arab Terlengkap | Al-Kitab',
+                    'description' => 'Temukan berbagai macam kitab Arab dari berbagai disiplin ilmu Islam dengan kualitas terbaik dan harga terjangkau.',
+                    'keywords' => 'kitab arab, buku islam, fiqh, hadits, tafsir, aqidah, bahasa arab',
+                    'canonical' => url('/api/produk')
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data produk',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function api_show($id)
+    {
+        try {
+            $produk = DB::table('produk')
+                ->leftJoin('produk_indo', 'produk_indo.id_produk', '=', 'produk.id')
+                ->select([
+                    'produk.id',
+                    'produk.judul',
+                    'produk_indo.judul_indo',
+                    'produk.kategori',
+                    'produk.sub_kategori',
+                    'produk.penulis',
+                    'produk.stok',
+                    'produk.images',
+                    'produk.penerbit',
+                    'produk.halaman',
+                    'produk.cover',
+                    'produk.kertas',
+                    'produk.berat',
+                    'produk.harga_jual', // tambahkan field yang mungkin diperlukan
+                    'produk.harga_modal',
+                    'produk.link_youtube', // tambahkan field yang mungkin diperlukan
+                ])
+                ->where('produk.id', $id)
+                ->first();
+
+            if (!$produk) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Produk tidak ditemukan'
+                ], 404);
+            }
+
+            $produk->slug = Str::slug($produk->judul_indo ?? $produk->judul) . '-' . $produk->id;
+
+            $produk->images = $this->processImages($produk->images);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail produk berhasil diambil',
+                'data' => $produk
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail produk',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    protected function processImages($imagesJson)
+    {
+        if (empty($imagesJson)) {
+            return [];
+        }
+
+        $imagesArray = json_decode($imagesJson, true);
+
+        // If json_decode fails or not an array
+        if (!is_array($imagesArray)) {
+            return [];
+        }
+
+        return array_map(function ($image) {
+            return $this->generateImageUrl($image);
+        }, $imagesArray);
+    }
+
+    /**
+     * Generate full URL for product image
+     */
+    protected function generateImageUrl($imagePath)
+    {
+        if (empty($imagePath)) {
+            return null;
+        }
+
+        // Check if the path is already a URL
+        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+            return $imagePath;
+        }
+
+        // Assuming images are stored in storage/app/public/product
+        // and symbolic link is created to public/storage
+        return Storage::disk('public')->url('products/' . ltrim($imagePath, '/'));
+    }
     public function load(Request $request)
     {
         // dd($request->all());
@@ -137,7 +309,7 @@ class ProdukController extends Controller
             $columns = DB::getSchemaBuilder()->getColumnListing('produk');
 
             // Filter kolom yang tidak ingin ditampilkan
-            $excludedColumns = ['id', 'kd_produk', 'sub_kategori', 'images', 'penulis', 'created_at', 'updated_at', 'deleted_at'];
+            $excludedColumns = ['id', 'kd_produk', 'sub_kategori', 'images', 'penulis', 'link_youtube', 'created_at', 'updated_at', 'deleted_at'];
             $dynamicColumns = array_diff($columns, $excludedColumns);
 
             return response()->json([
@@ -184,6 +356,7 @@ class ProdukController extends Controller
                 'judul',
                 'kategori',
                 'sub_kategori',
+                'link_youtube',
                 'penerbit',
                 'cover',
                 'kertas',
@@ -227,6 +400,7 @@ class ProdukController extends Controller
         $request->validate([
             'judul_arab' => 'required|string|max:255',
             'judul_indonesia' => 'required|string|max:255',
+            'link_youtube' => 'nullable|string|url|max:255',
             'kategori' => 'required',
             'kategori_indonesia' => 'required',
             'sub_kategori' => 'required',
@@ -254,6 +428,7 @@ class ProdukController extends Controller
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
             'judul_indonesia.required' => 'Judul produk (Indonesia) wajib diisi',
+            'link_youtube.url' => 'Harus masukan dalam bentuk url',
             'kategori.required' => 'Kategori wajib dipilih',
             'sub_kategori.required' => 'Sub Kategori wajib dipilih',
             'penerbit.required' => 'Penerbit wajib dipilih',
@@ -321,6 +496,7 @@ class ProdukController extends Controller
                 'harga_jual' => $request->harga_jual,
                 'stok' => $request->stok,
                 'images' => !empty($imageNames) ? json_encode($imageNames) : null,
+                'link_youtube' => $request->link_youtube,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -390,8 +566,11 @@ class ProdukController extends Controller
         $request->validate([
             'judul_arab' => 'required|string|max:255',
             'judul_indonesia' => 'required|string|max:255',
+            'link_youtube' => 'nullable|string|url|max:255',
             'kategori' => 'required',
             'kategori_indonesia' => 'required',
+            'sub_kategori' => 'required',
+            'sub_kategori_indonesia' => 'required',
             'penerbit' => 'required',
             'penerbit_indonesia' => 'required',
             'cover' => 'required',
@@ -416,6 +595,8 @@ class ProdukController extends Controller
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
             'judul_indonesia.required' => 'Judul produk (Indonesia) wajib diisi',
+            'link_youtube.url' => 'Harus masukan dalam bentuk url',
+            'sub_kategori.required' => 'Sub Kategori wajib dipilih',
             'kategori.required' => 'Kategori wajib dipilih',
             'penerbit.required' => 'Penerbit wajib dipilih',
             'cover.required' => 'Cover wajib dipilih',
@@ -490,6 +671,7 @@ class ProdukController extends Controller
             $produkUpdateData = [
                 'judul' => $request->judul_arab,
                 'kategori' => $request->kategori,
+                'sub_kategori' => $request->sub_kategori,
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -504,6 +686,7 @@ class ProdukController extends Controller
                 'harga_jual' => $request->harga_jual,
                 'stok' => $request->stok,
                 'images' => !empty($imageNames) ? json_encode($imageNames) : null,
+                'link_youtube' => $request->link_youtube,
                 'updated_at' => now(),
             ];
 
@@ -535,6 +718,7 @@ class ProdukController extends Controller
                 'kualitas_indo' => $request->kualitas_indonesia,
                 'harakat_indo' => $request->harakat_indonesia,
                 'penulis_indo' => $request->penulis_indonesia,
+                'sub_kategori_indo' => $request->sub_kategori_indonesia,
             ];
 
             // Tambahkan kolom dinamis untuk tabel produk_indo
@@ -581,10 +765,11 @@ class ProdukController extends Controller
     public function edit($id)
     {
         $decryptedId = Crypt::decrypt($id);
+
         $produk = DB::table('produk')
             ->join('produk_indo', 'produk.id', '=', 'produk_indo.id_produk')
             ->join('supplier', 'produk.supplier', '=', 'supplier.id')
-            ->select('produk.*', 'produk_indo.*', 'supplier.nama_supplier', 'supplier.telepon')
+            ->select('produk.*', 'produk.id as id_produk_asli', 'produk_indo.*', 'supplier.nama_supplier', 'supplier.telepon')
             ->where('produk.id', $decryptedId)
             ->first();
 

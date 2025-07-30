@@ -15,6 +15,67 @@ class KategoriController extends Controller
         return view('kelola_data.kategori.index');
     }
 
+    public function get_api()
+    {
+        // Get all categories
+        $kategoris = DB::table('kategori')->get();
+
+        $result = [];
+        foreach ($kategoris as $kategori) {
+            // Get subcategories for each category
+            $subkategoris = DB::table('sub_kategori')
+                ->where('id_kategori', $kategori->id)
+                ->get();
+
+            // Build the category array with subcategories
+            $kategoriData = [
+                'id' => $kategori->id,
+                'nama' => $kategori->nama_indonesia,
+                'nama_arab' => $kategori->nama_arab,
+                // Add other kategori fields as needed
+                'subkategoris' => $subkategoris
+            ];
+
+            $result[] = $kategoriData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
+    public function get_api_show($id)
+    {
+        // Get the category
+        $kategori = DB::table('kategori')->where('id', $id)->first();
+
+        if (!$kategori) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kategori tidak ditemukan'
+            ], 404);
+        }
+
+        // Get subcategories for this category
+        $subkategoris = DB::table('sub_kategori')
+            ->where('id_kategori', $id)
+            ->get();
+
+        // Build the response data
+        $kategoriData = [
+            'id' => $kategori->id,
+            'nama' => $kategori->nama_indonesia,
+            // Add other kategori fields as needed
+            'subkategoris' => $subkategoris
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $kategoriData
+        ]);
+    }
+
     public function load(Request $request)
     {
         $query = DB::table('kategori')
