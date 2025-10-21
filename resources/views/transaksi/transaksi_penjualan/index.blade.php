@@ -191,6 +191,13 @@
             margin-bottom: 15px;
         }
 
+        #ekspedisi-logo-preview {
+            max-width: 100px;
+            max-height: 50px;
+            margin-top: 10px;
+            display: none;
+        }
+
         /* Aksi */
     </style>
 </head>
@@ -215,7 +222,8 @@
                 </a>
             </div>
         </div>
-        <form id="form-transaksi" action="{{ route('transaksi.transaksi_penjualan.simpan') }}" method="post">
+        <form id="form-transaksi" action="{{ route('transaksi.transaksi_penjualan.simpan') }}" method="post"
+            enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-lg-12">
@@ -285,6 +293,11 @@
                                                         value="transfer">
                                                     <label for="transfer">Transfer</label>
                                                 </div>
+                                                <div class="payment-option">
+                                                    <input type="radio" id="qris" name="metode_pembayaran"
+                                                        value="qris">
+                                                    <label for="qris">QRIS</label>
+                                                </div>
                                             </div>
                                             <div id="metode-hutang" style="display: none;">
                                                 <div class="form-check">
@@ -292,10 +305,33 @@
                                                         name="metode_pembayaran" value="dp">
                                                     <label class="form-check-label" for="dp">DP</label>
                                                 </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" id="cod"
+                                                        name="metode_pembayaran" value="cod">
+                                                    <label class="form-check-label" for="cod">COD</label>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td style="vertical-align:top">
+                                        <label for="channel_order">Channel Order</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <select class="form-control" name="channel_order" id="channel_order"
+                                                required>
+                                                <option value="">Pilih Channel</option>
+                                                <option value="Offline">Offline</option>
+                                                <option value="WA">WA</option>
+                                                <option value="Marketplace">Marketplace</option>
+                                                <option value="Supplier Fulfillment">Supplier Fulfillment</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                </tr>
+
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
                                         <label for="ekspedisi">Ekspedisi</label>
@@ -304,12 +340,7 @@
                                         <div class="form-group">
                                             <select class="form-control" name="ekspedisi" id="ekspedisi">
                                                 <option value="">Pilih Ekspedisi</option>
-                                                <option value="JNE">JNE</option>
-                                                <option value="J&T">J&T</option>
-                                                <option value="SiCepat">SiCepat</option>
-                                                <option value="AnterAja">AnterAja</option>
-                                                <option value="Ninja Express">Ninja Express</option>
-                                                <option value="Lainnya">Lainnya</option>
+                                                <!-- Opsi ekspedisi akan diisi melalui JavaScript -->
                                             </select>
                                         </div>
                                     </td>
@@ -322,6 +353,19 @@
                                         <div class="form-group">
                                             <input type="text" class="form-control" name="ekspedisi_lain"
                                                 id="ekspedisi_lain">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="ekspedisi-logo-container" style="display:none;">
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="ekspedisi_logo">Logo Ekspedisi</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <input type="file" class="form-control-file" name="ekspedisi_logo"
+                                                id="ekspedisi_logo" accept="image/*">
+                                            <small class="text-muted">Upload logo ekspedisi (format: jpg, png, max
+                                                2MB)</small>
                                         </div>
                                     </td>
                                 </tr>
@@ -530,6 +574,40 @@
                                 </tr>
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
+                                        <label for="ongkir">Ongkir</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Rp</span>
+                                                </div>
+                                                <input type="text" class="form-control" id="ongkir"
+                                                    name="ongkir" placeholder="Nominal Ongkir">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="packing_kayu">Packing Kayu</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Rp</span>
+                                                </div>
+                                                <input type="text" class="form-control" id="packing_kayu"
+                                                    name="packing_kayu" placeholder="Biaya Tambahan Packing Kayu">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
                                         <label for="diskon-check">Diskon</label>
                                     </td>
                                     <td>
@@ -576,6 +654,7 @@
                                 <button type="submit" name="simpan" id="simpan" class="btn btn-primary">
                                     <i class="fa fa-paper-plane"></i> Simpan
                                 </button>
+
                             </div>
                         </div>
                     </div>
@@ -718,9 +797,66 @@
             $('#ekspedisi').change(function() {
                 if ($(this).val() === 'Lainnya') {
                     $('#ekspedisi-lain-container').show();
+                    $('#ekspedisi-logo-container').show();
                 } else {
                     $('#ekspedisi-lain-container').hide();
+                    $('#ekspedisi-logo-container').hide();
                 }
+            });
+
+            $('#ekspedisi_logo').change(function(e) {
+                if (this.files && this.files[0]) {
+                    var reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        $('#ekspedisi-logo-preview').attr('src', e.target.result).show();
+                    }
+
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            // Buat elemen untuk preview
+            $('#ekspedisi-logo-container').append('<img id="ekspedisi-logo-preview" src="#" alt="Preview Logo">');
+            // Fungsi untuk memuat data ekspedisi
+            function loadEkspedisi() {
+                $.ajax({
+                    url: "{{ route('transaksi.transaksi_penjualan.getEkspedisi') }}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(response) {
+                        var ekspedisiSelect = $('#ekspedisi');
+                        ekspedisiSelect.empty();
+                        ekspedisiSelect.append('<option value="">Pilih Ekspedisi</option>');
+
+                        $.each(response, function(index, ekspedisi) {
+                            ekspedisiSelect.append('<option value="' + ekspedisi
+                                .nama_ekspedisi + '">' + ekspedisi.nama_ekspedisi +
+                                '</option>');
+                        });
+
+                        // Tambahkan opsi Lainnya di akhir
+                        ekspedisiSelect.append('<option value="Lainnya">Lainnya</option>');
+                    },
+                    error: function(xhr) {
+                        toastr.error('Gagal memuat data ekspedisi', 'Error');
+                        console.error('Error:', xhr.responseText);
+                    }
+                });
+            }
+
+            // Panggil fungsi loadEkspedisi saat dokumen siap
+            $(document).ready(function() {
+                loadEkspedisi();
+
+                // Handler untuk perubahan select ekspedisi tetap sama
+                $('#ekspedisi').change(function() {
+                    if ($(this).val() === 'Lainnya') {
+                        $('#ekspedisi-lain-container').show();
+                    } else {
+                        $('#ekspedisi-lain-container').hide();
+                    }
+                });
             });
 
             // Handle dropship mode toggle
@@ -867,6 +1003,7 @@
             }
 
             // Submit form transaksi
+            // Submit form transaksi - bagian yang diperbaiki
             $('#form-transaksi').on('submit', function(e) {
                 e.preventDefault();
 
@@ -877,7 +1014,6 @@
 
                 // Validasi dropship mode
                 if ($('#dropship-mode').is(':checked')) {
-                    // Validate dropship fields
                     if (!$('#nama_pengirim').val() || !$('#telepon_pengirim').val() || !$(
                             '#alamat_pengirim').val() ||
                         !$('#nama_penerima').val() || !$('#telepon_penerima').val() || !$(
@@ -924,7 +1060,7 @@
                 $('#cart_table tr').each(function() {
                     var row = $(this);
                     items.push({
-                        kd_produk: row.find('td:eq(1)').text(), // Kolom kode produk
+                        kd_produk: row.find('td:eq(1)').text(),
                         quantity: parseInt(row.find('.qty-input').val()),
                         unit_price: parseRupiah($('#dropship-mode').is(':checked') ?
                             row.find('.custom-price-input').val() :
@@ -933,45 +1069,34 @@
                     });
                 });
 
-                // Hitung deposit yang digunakan
-                var usedDeposit = 0;
-                if ($('#deposit').val()) {
-                    usedDeposit = Math.min(
-                        parseRupiah($('#deposit').val()),
-                        parseRupiah($('#grand_total').text())
-                    );
-                }
-
-                var ekspedisi = $('#ekspedisi').val();
-                if (ekspedisi === 'Lainnya') {
-                    ekspedisi = $('#ekspedisi_lain').val();
-                }
-
                 var potonganNominal = parseRupiah($('#potongan-nominal').val()) || 0;
+                var usedDeposit = parseRupiah($('#deposit-used').val()) || 0;
 
                 // Siapkan data transaksi
                 var transaksiData = {
                     customer: $('#customer').val(),
                     payment_method: $('input[name="metode_pembayaran"]:checked').val(),
                     payment_status: $('input[name="status_pembayaran"]:checked').val(),
+                    channel_order: $('#channel_order').val(),
                     items: items,
                     subtotal: parseRupiah($('#grand_total').text()),
                     total: parseRupiah($('#total').val()),
                     paid_amount: parseRupiah($('#bayar').val()),
-                    used_deposit: depositUsed,
+                    used_deposit: usedDeposit,
                     diskon_persen: parseFloat($('#diskon-persen').val()) || 0,
                     notes: $('#catatan').val() || '',
                     ekspedisi: $('#ekspedisi').val(),
-                    ekspedisi_lain: $('#ekspedisi').val() === 'Lainnya' ? $('#ekspedisi_lain').val() :
-                        null,
+                    ekspedisi_lain: $('#ekspedisi_lain').val() || null, // Pastikan ini dikirim
                     potongan: potonganNominal,
-                    is_dropship: $('#dropship-mode').is(':checked') ? '1' : '0',
+                    is_dropship: $('#dropship-mode').is(':checked') ? 1 : 0,
                     nama_pengirim: $('#nama_pengirim').val() || "",
                     telepon_pengirim: $('#telepon_pengirim').val() || "",
                     alamat_pengirim: $('#alamat_pengirim').val() || "",
                     nama_penerima: $('#nama_penerima').val() || "",
                     telepon_penerima: $('#telepon_penerima').val() || "",
                     alamat_penerima: $('#alamat_penerima').val() || "",
+                    ongkir: parseRupiah($('#ongkir').val()) || 0,
+                    packing_kayu: parseRupiah($('#packing_kayu').val()) || 0,
                 };
 
                 // Jika metode DP, pastikan payment_method adalah 'dp'
@@ -984,55 +1109,99 @@
                 const originalText = submitBtn.html();
                 submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
 
-                // Kirim data ke server
-                $.ajax({
-                    url: $(this).attr('action'),
+                // Cek apakah ada file yang perlu di-upload
+                var hasFiles = $('#ekspedisi_logo')[0].files.length > 0 || $('#bukti_transfer')[0].files
+                    .length > 0;
+
+                var ajaxOptions = {
+                    url: $('#form-transaksi').attr('action'),
                     type: 'POST',
-                    data: transaksiData,
-                    success: function(response) {
-                        if (response.success) {
-                            toastr.success(response.message || 'Transaksi berhasil disimpan!',
-                                'Sukses!');
-
-                            var invoiceUrl =
-                                "{{ route('transaksi.transaksi_penjualan.cetak_invoice', '') }}/" +
-                                response.data.transaksi_id;
-                            var invoiceWindow = window.open(invoiceUrl, '_blank');
-
-                            // Redirect ke halaman transaksi setelah 3 detik
-                            setTimeout(function() {
-                                window.location.href =
-                                    "{{ route('transaksi.transaksi_penjualan.index') }}";
-                            }, 3000);
-                        } else {
-                            toastr.error(response.message || 'Gagal menyimpan transaksi!',
-                                'Error!');
-                        }
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    error: function(xhr) {
-                        if (xhr.status === 422) {
-                            let errors = xhr.responseJSON.errors;
-                            let errorMessages = [];
+                };
 
-                            $.each(errors, function(key, value) {
-                                errorMessages.push(value[0]);
-                            });
+                if (hasFiles) {
+                    // Jika ada file, gunakan FormData
+                    var formData = new FormData();
 
-                            toastr.error(errorMessages.join('<br>'), 'Validasi Error!', {
-                                timeOut: 8000,
-                                extendedTimeOut: 3000,
-                                enableHtml: true,
-                                closeButton: true,
-                                progressBar: true
+                    // Append data transaksi ke FormData
+                    Object.keys(transaksiData).forEach(key => {
+                        if (key === 'items') {
+                            // Untuk array items, append setiap item secara terpisah
+                            transaksiData[key].forEach((item, index) => {
+                                Object.keys(item).forEach(itemKey => {
+                                    formData.append(`items[${index}][${itemKey}]`,
+                                        item[itemKey]);
+                                });
                             });
-                        } else {
-                            toastr.error('Terjadi kesalahan pada server', 'Error!');
+                        } else if (transaksiData[key] !== null && transaksiData[key] !==
+                            undefined) {
+                            formData.append(key, transaksiData[key]);
                         }
-                        console.error('Error:', xhr.responseText);
-                    },
-                    complete: function() {
-                        submitBtn.prop('disabled', false).html(originalText);
+                    });
+
+                    // Append file ekspedisi_logo jika ada
+                    var ekspedisiLogoFile = $('#ekspedisi_logo')[0].files[0];
+                    if (ekspedisiLogoFile) {
+                        formData.append('ekspedisi_logo', ekspedisiLogoFile);
                     }
+
+                    // Append file bukti_transfer jika ada
+                    var buktiTransferFile = $('#bukti_transfer')[0].files[0];
+                    if (buktiTransferFile) {
+                        formData.append('bukti_transfer', buktiTransferFile);
+                    }
+
+                    ajaxOptions.data = formData;
+                    ajaxOptions.processData = false;
+                    ajaxOptions.contentType = false;
+                } else {
+                    // Jika tidak ada file, gunakan data biasa
+                    ajaxOptions.data = transaksiData;
+                }
+
+                // Kirim data ke server
+                $.ajax(ajaxOptions).done(function(response) {}).done(function(response) {
+                    if (response.success) {
+                        toastr.success(response.message || 'Transaksi berhasil disimpan!',
+                            'Sukses!');
+
+                        var invoiceUrl =
+                            "{{ route('transaksi.transaksi_penjualan.cetak_invoice', '') }}/" +
+                            response.data.transaksi_id;
+                        var invoiceWindow = window.open(invoiceUrl, '_blank');
+
+                        // Redirect ke halaman transaksi setelah 3 detik
+                        setTimeout(function() {
+                            window.location.href =
+                                "{{ route('transaksi.transaksi_penjualan.index') }}";
+                        }, 3000);
+                    } else {
+                        toastr.error(response.message || 'Gagal menyimpan transaksi!', 'Error!');
+                    }
+                }).fail(function(xhr) {}).fail(function(xhr) {
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        let errorMessages = [];
+
+                        $.each(errors, function(key, value) {
+                            errorMessages.push(value[0]);
+                        });
+
+                        toastr.error(errorMessages.join('<br>'), 'Validasi Error!', {
+                            timeOut: 8000,
+                            extendedTimeOut: 3000,
+                            enableHtml: true,
+                            closeButton: true,
+                            progressBar: true
+                        });
+                    } else {
+                        toastr.error('Terjadi kesalahan pada server', 'Error!');
+                    }
+                    console.error('Error:', xhr.responseText);
+                }).always(function() {
+                    submitBtn.prop('disabled', false).html(originalText);
                 });
             });
 
@@ -1655,6 +1824,17 @@
                 updateGrandTotal();
             });
 
+            $('#ongkir, #packing_kayu').on('keyup', function() {
+                $(this).val(formatRupiahInput($(this).val(), ''));
+                updateGrandTotal();
+            });
+
+            $('#ongkir, #packing_kayu').on('blur', function() {
+                var value = parseRupiah($(this).val());
+                $(this).val(formatRupiah(value));
+                updateGrandTotal();
+            });
+
             // Format input potongan nominal
             $('#potongan-nominal').on('keyup', function(e) {
                 $(this).val(formatRupiahInput($(this).val(), ''));
@@ -1695,7 +1875,10 @@
                     diskonNominal = (grandTotal - potonganNominal) * (diskonPersen / 100);
                 }
 
-                var totalSetelahPotonganDanDiskon = grandTotal - potonganNominal - diskonNominal;
+                var ongkir = parseRupiah($('#ongkir').val()) || 0;
+                var packingKayu = parseRupiah($('#packing_kayu').val()) || 0;
+                var totalSetelahPotonganDanDiskon = grandTotal - potonganNominal - diskonNominal + ongkir +
+                    packingKayu;
 
                 // Update grand_total display
                 $('#grand_total').text(formatRupiah(grandTotal));

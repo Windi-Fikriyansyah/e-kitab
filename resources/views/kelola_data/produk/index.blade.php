@@ -88,14 +88,14 @@
                 <div class="row mb-3">
                     <div class="col-md-2">
                         <input type="text" class="form-control filter-input" placeholder="Filter Kd Produk"
-                            data-column="0">
+                            data-column="kd_produk">
                     </div>
                     <div class="col-md-2">
                         <input type="text" class="form-control filter-input" placeholder="Filter Judul"
-                            data-column="1">
+                            data-column="judul">
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select filter-select select2-penulis" data-column="2">
+                        <select class="form-select filter-select select2-penulis" data-column="penulis">
                             <option value="">Semua Penulis</option>
                             @foreach ($penulis as $penulis)
                                 <option value="{{ $penulis->nama_arab }}">{{ $penulis->nama_arab }} |
@@ -104,7 +104,7 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select filter-select select2-kategori" data-column="3">
+                        <select class="form-select filter-select select2-kategori" data-column="kategori">
                             <option value="">Semua Kategori</option>
                             @foreach ($kategoris as $kategori)
                                 <option value="{{ $kategori->nama_arab }}">{{ $kategori->nama_arab }} |
@@ -113,7 +113,7 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select filter-select select2-penerbit" data-column="4">
+                        <select class="form-select filter-select select2-penerbit" data-column="penerbit">
                             <option value="">Semua Penerbit</option>
                             @foreach ($penerbits as $penerbit)
                                 <option value="{{ $penerbit->nama_arab }}">{{ $penerbit->nama_arab }} |
@@ -122,7 +122,7 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <select class="form-select filter-select select2-supplier" data-column="5">
+                        <select class="form-select filter-select select2-supplier" data-column="supplier">
                             <option value="">Semua Supplier</option>
                             @foreach ($suppliers as $supplier)
                                 <option value="{{ $supplier->id }}">{{ $supplier->nama_supplier }} |
@@ -132,7 +132,7 @@
                     </div>
                     <div class="col-md-2 mt-2">
                         <input type="text" class="form-control filter-input" placeholder="Filter Stok"
-                            data-column="6">
+                            data-column="stok">
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -142,13 +142,13 @@
                                 <th>Gambar</th>
                                 <th>Kd Produk</th>
                                 <th>Judul</th>
-                                <th>Penulis</th>
-                                <th>Kategori</th>
-                                <th>Penerbit</th>
-                                <th>Supplier</th>
+                                <th style="display:none;">Penulis</th>
+                                <th style="display:none;">Kategori</th>
+                                <th style="display:none;">Penerbit</th>
+                                <th style="display:none;">Supplier</th>
                                 <th>Stok</th>
                                 <th>Harga Modal</th>
-                                <th>Harga Jual</th>
+                                <th style="display:none;">Harga Jual</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -302,7 +302,8 @@
                         // Tambahkan parameter filter untuk setiap kolom
                         $('.filter-input, .filter-select').each(function() {
                             if ($(this).val() != '') {
-                                d.columns[$(this).data('column')].search.value = $(this).val();
+                                d.columns.find(col => col.data === $(this).data('column'))
+                                    .search.value = $(this).val();
                             }
                         });
                     }
@@ -337,12 +338,16 @@
                         data: 'judul',
                     }, {
                         data: 'penulis',
+                        visible: false
                     }, {
                         data: 'kategori',
+                        visible: false
                     }, {
                         data: 'penerbit',
+                        visible: false
                     }, {
                         data: 'supplier',
+                        visible: false
                     },
                     {
                         data: 'stok',
@@ -353,6 +358,7 @@
                         }
                     }, {
                         data: 'harga_jual',
+                        visible: false,
                         render: function(data) {
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
@@ -368,7 +374,7 @@
                     },
                     {
                         className: "dt-body-center",
-                        targets: [0, 1, 2, 4, 5, 6, 7]
+                        targets: [0, 1, 2, 7, 8, 10]
                     }
                 ]
             });

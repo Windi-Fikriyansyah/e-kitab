@@ -14,25 +14,31 @@ use App\Http\Controllers\Laporan\SertifikatController as LaporanSertifikatContro
 use App\Exports\SalesReportExport;
 use App\Http\Controllers\KelolaData\CoverController;
 use App\Http\Controllers\KelolaData\CustomerController;
+use App\Http\Controllers\KelolaData\EkspedisiController;
 use App\Http\Controllers\KelolaData\HarakatController;
 use App\Http\Controllers\KelolaData\KategoriController;
 use App\Http\Controllers\KelolaData\KertasController;
 use App\Http\Controllers\KelolaData\KualitasController;
+use App\Http\Controllers\KelolaData\LinkfooterController;
 use App\Http\Controllers\KelolaData\PenerbitController;
 use App\Http\Controllers\KelolaData\PenulisController;
 use App\Http\Controllers\KelolaData\ProdukController;
 use App\Http\Controllers\KelolaData\ProfilePerusahaan;
 use App\Http\Controllers\KelolaData\SubKategoriController;
 use App\Http\Controllers\KelolaData\SupplierController;
+use App\Http\Controllers\KelolaData\TestimoniController;
 use App\Http\Controllers\KelolaData\UkuranController;
 use App\Http\Controllers\KelolaLink\DeskripsiController;
 use App\Http\Controllers\KelolaLink\GenerateController;
+use App\Http\Controllers\Laporan\LaporanPengeluaranController;
 use App\Http\Controllers\Laporan\LaporanStokController;
 use App\Http\Controllers\Laporan\LaporanSupplierController;
 use App\Http\Controllers\Laporan\RekapSupplierController;
+use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\Transaksi\BarangKeluarController;
 use App\Http\Controllers\Transaksi\BarangMasukController;
 use App\Http\Controllers\Transaksi\DataTransaksiController;
+use App\Http\Controllers\Transaksi\PengeluaranController;
 use App\Http\Controllers\Transaksi\TransaksiPenjualanController;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
@@ -53,6 +59,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 Route::get('/dashboard', [Dashboard::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
+
 Route::get('/home', function () {
     return view('home');
 })->middleware(['auth', 'verified'])->name('home');
@@ -70,6 +77,18 @@ Route::get('/home', function () {
 // });
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('/dashboard/load-realtime', [Dashboard::class, 'loadRealtime'])->name('dashboard.loadRealtime');
+    Route::post('/dashboard/load-riwayat', [Dashboard::class, 'loadRiwayat'])->name('dashboard.loadRiwayat');
+    Route::post('/dashboard/load-aging', [Dashboard::class, 'loadAging'])->name('dashboard.loadAging');
+    Route::post('/dashboard/load-pergerakan', [Dashboard::class, 'loadPergerakan'])->name('dashboard.loadPergerakan');
+    Route::post('/dashboard/load-laporan-supplier', [Dashboard::class, 'loadLaporanSupplier'])->name('dashboard.loadLaporanSupplier');
+    Route::post('/dashboard/load-tagihan-supplier', [Dashboard::class, 'loadTagihanSupplier'])->name('dashboard.loadTagihanSupplier');
+    Route::post('/dashboard/load-ringkasan-supplier', [Dashboard::class, 'loadRingkasanSupplier'])->name('dashboard.loadRingkasanSupplier');
+    Route::post('/dashboard/load-laba-rugi', [Dashboard::class, 'loadLabaRugi'])->name('dashboard.loadLabaRugi');
+    Route::post('/dashboard/load-pengeluaran-kategori', [Dashboard::class, 'loadPengeluaranKategori'])->name('dashboard.loadPengeluaranKategori');
+    Route::post('/dashboard/load-cashflow', [Dashboard::class, 'loadCashflow'])->name('dashboard.loadCashflow');
+    Route::post('/dashboard/load-rekap-pembayaran', [Dashboard::class, 'loadRekapPembayaran'])->name('dashboard.loadRekapPembayaran');
+
 
 
     // Permission
@@ -192,6 +211,17 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/cover/{id}', [CoverController::class, 'destroy'])->middleware('permission:13')->name('destroy');
             });
 
+        Route::prefix('ekspedisi')->as('ekspedisi.')
+            ->group(function () {
+                Route::get('', [EkspedisiController::class, 'index'])->middleware('permission:13')->name('index');
+                Route::post('load', [EkspedisiController::class, 'load'])->middleware('permission:13')->name('load');
+                Route::get('create', [EkspedisiController::class, 'create'])->middleware('permission:13')->name('create');
+                Route::post('store', [EkspedisiController::class, 'store'])->middleware('permission:13')->name('store');
+                Route::get('edit/{id}', [EkspedisiController::class, 'edit'])->middleware('permission:13')->name('edit');
+                Route::put('update/{id}', [EkspedisiController::class, 'update'])->middleware('permission:13')->name('update');
+                Route::delete('/cover/{id}', [EkspedisiController::class, 'destroy'])->middleware('permission:13')->name('destroy');
+            });
+
         Route::prefix('supplier')->as('supplier.')
             ->group(function () {
                 Route::get('', [SupplierController::class, 'index'])->middleware('permission:15')->name('index');
@@ -232,10 +262,16 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('create', [ProdukController::class, 'create'])->middleware('permission:20')->name('create');
                 Route::post('store', [ProdukController::class, 'store'])->middleware('permission:20')->name('store');
                 Route::get('edit/{id}', [ProdukController::class, 'edit'])->middleware('permission:20')->name('edit');
+                Route::get('riwayat/{id}', [ProdukController::class, 'riwayat'])->middleware('permission:20')->name('riwayat');
+                Route::post('load_riwayat', [ProdukController::class, 'load_riwayat'])->middleware('permission:20')->name('load_riwayat');
+                Route::post('/export-pdf', [ProdukController::class, 'exportPdf'])->name('exportPdf');
+                Route::post('/export-excel', [ProdukController::class, 'exportExcel'])->name('exportExcel');
+
                 Route::get('show/{id}', [ProdukController::class, 'show'])->middleware('permission:20')->name('show');
                 Route::put('update/{id}', [ProdukController::class, 'update'])->middleware('permission:20')->name('update');
                 Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->middleware('permission:20')->name('destroy');
                 Route::post('/getkategori', [ProdukController::class, 'getkategori'])->middleware('permission:20')->name('getkategori');
+                Route::post('/getkategori1', [ProdukController::class, 'getkategori1'])->middleware('permission:20')->name('getkategori1');
                 Route::post('/getpenerbit', [ProdukController::class, 'getpenerbit'])->middleware('permission:20')->name('getpenerbit');
                 Route::post('/getcover', [ProdukController::class, 'getcover'])->middleware('permission:20')->name('getcover');
                 Route::post('produk/getkertas', [ProdukController::class, 'getkertas'])->name('getkertas');
@@ -250,6 +286,8 @@ Route::middleware(['auth'])->group(function () {
 
                 Route::post('/produk/delete-image', [ProdukController::class, 'deleteImage'])->name('deleteImage');
                 Route::post('/getsubkategori', [ProdukController::class, 'getSubKategori'])->name('getsubkategori');
+
+                Route::post('/tambah-data', [ProdukController::class, 'tambahData'])->name('tambahData');
             });
     });
 
@@ -285,6 +323,41 @@ Route::middleware(['auth'])->group(function () {
             });
     });
 
+    Route::prefix('pengaturan_web')->as('pengaturan_web.')->group(function () {
+
+
+        Route::prefix('testimoni')->as('testimoni.')
+            ->group(function () {
+                Route::get('', [TestimoniController::class, 'index'])->middleware('permission:37')->name('index');
+                Route::post('load', [TestimoniController::class, 'load'])->middleware('permission:37')->name('load');
+                Route::get('create', [TestimoniController::class, 'create'])->middleware('permission:37')->name('create');
+                Route::post('store', [TestimoniController::class, 'store'])->middleware('permission:37')->name('store');
+                Route::get('edit/{id}', [TestimoniController::class, 'edit'])->middleware('permission:37')->name('edit');
+                Route::put('update/{id}', [TestimoniController::class, 'update'])->middleware('permission:37')->name('update');
+                Route::delete('/profile/{id}', [TestimoniController::class, 'destroy'])->middleware('permission:37')->name('destroy');
+                Route::post('getsosmed', [TestimoniController::class, 'getSosmed'])->middleware('permission:37')->name('get_sosmed');
+            });
+
+        Route::prefix('link_social')->as('link_social.')
+            ->group(function () {
+                Route::get('', [LinkfooterController::class, 'index'])->middleware('permission:37')->name('index');
+                Route::post('load', [LinkfooterController::class, 'load'])->middleware('permission:37')->name('load');
+                Route::get('create', [LinkfooterController::class, 'create'])->middleware('permission:37')->name('create');
+                Route::post('store', [LinkfooterController::class, 'store'])->middleware('permission:37')->name('store');
+                Route::get('edit/{id}', [LinkfooterController::class, 'edit'])->middleware('permission:37')->name('edit');
+                Route::put('update/{id}', [LinkfooterController::class, 'update'])->middleware('permission:37')->name('update');
+                Route::delete('/profile/{id}', [LinkfooterController::class, 'destroy'])->middleware('permission:37')->name('destroy');
+                Route::post('getsosmed', [LinkfooterController::class, 'getSosmed'])->middleware('permission:37')->name('get_sosmed');
+            });
+
+        Route::prefix('hero')->as('hero.')
+            ->group(function () {
+                Route::get('', [PengaturanController::class, 'index'])->middleware('permission:17')->name('index');
+                Route::post('store', [PengaturanController::class, 'store'])->middleware('permission:37')->name('store');
+                Route::put('update/{id}', [PengaturanController::class, 'update'])->middleware('permission:37')->name('update');
+            });
+    });
+
     Route::prefix('transaksi')->as('transaksi.')->group(function () {
 
 
@@ -312,6 +385,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/getproduk', [BarangKeluarController::class, 'getproduk'])->middleware('permission:23')->name('getproduk');
             });
 
+        Route::prefix('pengeluaran')->as('pengeluaran.')
+            ->group(function () {
+                Route::get('', [PengeluaranController::class, 'index'])->middleware('permission:40')->name('index');
+                Route::post('load', [PengeluaranController::class, 'load'])->middleware('permission:40')->name('load');
+                Route::get('create', [PengeluaranController::class, 'create'])->middleware('permission:40')->name('create');
+                Route::post('store', [PengeluaranController::class, 'store'])->middleware('permission:40')->name('store');
+                Route::get('edit/{id}', [PengeluaranController::class, 'edit'])->middleware('permission:40')->name('edit');
+                Route::put('update/{id}', [PengeluaranController::class, 'update'])->middleware('permission:40')->name('update');
+                Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy'])->middleware('permission:40')->name('destroy');
+                Route::post('/getproduk', [PengeluaranController::class, 'getproduk'])->middleware('permission:40')->name('getproduk');
+            });
+
         Route::prefix('transaksi_penjualan')->as('transaksi_penjualan.')
             ->group(function () {
                 Route::get('', [TransaksiPenjualanController::class, 'index'])->middleware('permission:24')->name('index');
@@ -329,7 +414,20 @@ Route::middleware(['auth'])->group(function () {
                     ->name('simpan');
                 Route::get('/transaksi/penjualan/cetak-invoice/{id}', [TransaksiPenjualanController::class, 'cetakInvoice'])
                     ->name('cetak_invoice');
+                // routes/web.php
+                Route::get('/transaksi/{id}/invoice-thermal', [TransaksiPenjualanController::class, 'cetakInvoiceThermal'])->name('invoice.thermal');
+                Route::get('/ekspedisi', [TransaksiPenjualanController::class, 'getEkspedisi'])->name('getEkspedisi');
+                Route::post('/ekspedisi', [TransaksiPenjualanController::class, 'simpanEkspedisi'])->name('simpanekspedisi');
+                Route::post('/simpan-draft', [TransaksiPenjualanController::class, 'simpanDraft'])
+                    ->name('simpan_draft');
+
+                Route::get('/load-draft', [TransaksiPenjualanController::class, 'loadDraft'])
+                    ->name('load_draft');
+
+                Route::delete('/hapus-draft', [TransaksiPenjualanController::class, 'hapusDraft'])
+                    ->name('hapus_draft');
             });
+
 
         Route::prefix('data_transaksi')->as('data_transaksi.')
             ->group(function () {
@@ -346,6 +444,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/payment-history/{id}', [DataTransaksiController::class, 'paymentHistory'])->name('payment_history');
                 Route::get('/cetak-invoice/{id}', [DataTransaksiController::class, 'cetakInvoice'])
                     ->name('cetak_invoice');
+                Route::get('/cetak-suratjalan/{id}', [DataTransaksiController::class, 'cetakSuratJalan'])
+                    ->name('cetak_surat_jalan');
             });
     });
 
@@ -366,6 +466,14 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('load', [LaporanSupplierController::class, 'load'])->middleware('permission:27')->name('load');
                 Route::post('filter', [LaporanSupplierController::class, 'filter'])->middleware('permission:27')->name('filter');
                 Route::get('export', [LaporanSupplierController::class, 'export'])->middleware('permission:27')->name('export');
+            });
+
+        Route::prefix('laporan_pengeluaran')->as('laporan_pengeluaran.')
+            ->group(function () {
+                Route::get('', [LaporanPengeluaranController::class, 'index'])->middleware('permission:41')->name('index');
+                Route::post('load', [LaporanPengeluaranController::class, 'load'])->middleware('permission:41')->name('load');
+                Route::post('filter', [LaporanPengeluaranController::class, 'filter'])->middleware('permission:41')->name('filter');
+                Route::get('export', [LaporanPengeluaranController::class, 'exportExcel'])->middleware('permission:41')->name('export');
             });
 
         Route::prefix('rekap_laporan_supplier')->as('rekap_laporan_supplier.')

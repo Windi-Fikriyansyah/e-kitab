@@ -63,7 +63,7 @@ class DataTransaksiController extends Controller
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
                 $detailButton = '<button class="btn btn-sm btn-primary right-gap detail-btn" data-url="' . route('transaksi.data_transaksi.detail', Crypt::encrypt($row->id)) . '"><i class="fas fa-eye"></i></button>';
-                $printButton = '<a href="' . route('transaksi.data_transaksi.cetak_invoice', $row->id) . '" class="btn btn-sm btn-info right-gap" target="_blank"><i class="fas fa-print"></i></a>';
+                $printButton = '<button class="btn btn-sm btn-info right-gap print-btn" data-id="' . $row->id . '"><i class="fas fa-print"></i></button>';
                 $payButton = '';
                 if ($row->payment_status == 'hutang') {
                     $payButton = '<button class="btn btn-sm btn-success right-gap pay-btn" data-url="' . route('transaksi.data_transaksi.pay', Crypt::encrypt($row->id)) . '" data-remaining="' . $row->remaining_amount . '"><i class="fas fa-money-bill-wave"></i> Bayar</button>';
@@ -102,7 +102,9 @@ class DataTransaksiController extends Controller
     {
 
         $transaksi = DB::table('transaksi')
-            ->where('id', $id)
+            ->join('ekspedisi', 'transaksi.ekspedisi', '=', 'ekspedisi.nama_ekspedisi')
+            ->where('transaksi.id', $id)
+            ->select('transaksi.*', 'ekspedisi.nama_ekspedisi', 'ekspedisi.ekspedisi_logo')
             ->first();
 
         if (!$transaksi) {
@@ -117,6 +119,54 @@ class DataTransaksiController extends Controller
         $profilPerusahaan = DB::table('profile_perusahaan')->first();
 
         return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items', 'profilPerusahaan'));
+    }
+    public function cetakSuratJalan($id)
+    {
+        // Mengambil data transaksi dengan join ekspedisi
+        $transaksi = DB::table('transaksi')
+            ->leftJoin('ekspedisi', 'transaksi.ekspedisi', '=', 'ekspedisi.nama_ekspedisi')
+            ->where('transaksi.id', $id)
+            ->select(
+                'transaksi.*',
+                'ekspedisi.nama_ekspedisi',
+                'ekspedisi.ekspedisi_logo'
+            )
+            ->first();
+
+        if (!$transaksi) {
+            abort(404, 'Transaksi tidak ditemukan');
+        }
+
+        // Mengambil items transaksi dengan detail produk
+        $items = DB::table('transaksi_items')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('id_transaksi', $id)
+            ->select(
+                'transaksi_items.*',
+                'produk.judul',
+                'produk.penulis',
+                'produk.penerbit',
+                // Hitung total price jika belum ada
+                DB::raw('(transaksi_items.quantity * transaksi_items.unit_price) as calculated_total')
+            )
+            ->get()
+            ->map(function ($item) {
+                // Pastikan total_price ada nilai
+                if (!$item->total_price) {
+                    $item->total_price = $item->calculated_total;
+                }
+                return $item;
+            });
+
+        // Mengambil profil perusahaan
+        $profilPerusahaan = DB::table('profile_perusahaan')->first();
+
+        // Hitung subtotal jika tidak ada di database
+        if (!$transaksi->subtotal) {
+            $transaksi->subtotal = $items->sum('total_price');
+        }
+
+        return view('transaksi.data_transaksi.surat_jalan', compact('transaksi', 'items', 'profilPerusahaan'));
     }
     public function pay(Request $request, $id)
     {

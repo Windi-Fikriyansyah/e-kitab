@@ -50,29 +50,41 @@
                             <!-- Replace the kategori select section with this: -->
                             <div class="form-group">
                                 <label for="kategori">Kategori (Arab)</label>
-                                <select class="form-select @error('kategori') is-invalid @enderror" name="kategori"
-                                    dir="rtl" id="kategori" style="width: 100%">
-                                    @if (isset($produk) && $produk->kategori)
-                                        <option value="{{ $produk->kategori }}" selected>
-                                            {{ $produk->kategori }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('kategori') is-invalid @enderror" name="kategori"
+                                        dir="rtl" id="kategori" style="width: 100%">
+                                        @if (isset($produk) && $produk->kategori)
+                                            <option value="{{ $produk->kategori }}" selected>
+                                                {{ $produk->kategori }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('kategori')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('kategori')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
+
                             <div class="form-group">
                                 <label for="sub_kategori">Sub Kategori (Arab)</label>
-                                <select class="form-select @error('sub_kategori') is-invalid @enderror" name="sub_kategori"
-                                    dir="rtl" id="sub_kategori" style="width: 100%">
-                                    @if (isset($produk) && $produk->sub_kategori)
-                                        <option value="{{ $produk->sub_kategori }}" selected>
-                                            {{ $produk->sub_kategori }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('sub_kategori') is-invalid @enderror"
+                                        name="sub_kategori" dir="rtl" id="sub_kategori" style="width: 100%">
+                                        @if (isset($produk) && $produk->sub_kategori)
+                                            <option value="{{ $produk->sub_kategori }}" selected>
+                                                {{ $produk->sub_kategori }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success"
+                                        onclick="bukaModalTambah('sub_kategori')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('sub_kategori')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -80,14 +92,19 @@
 
                             <div class="form-group">
                                 <label for="penerbit">Penerbit (Arab)</label>
-                                <select class="form-select @error('penerbit') is-invalid @enderror" name="penerbit"
-                                    dir="rtl" id="penerbit" style="width: 100%">
-                                    @if (isset($produk) && $produk->penerbit)
-                                        <option value="{{ $produk->penerbit }}" selected>
-                                            {{ $produk->penerbit }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('penerbit') is-invalid @enderror" name="penerbit"
+                                        dir="rtl" id="penerbit" style="width: 100%">
+                                        @if (isset($produk) && $produk->penerbit)
+                                            <option value="{{ $produk->penerbit }}" selected>
+                                                {{ $produk->penerbit }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('penerbit')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('penerbit')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -140,14 +157,19 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="cover">Cover (Arab)</label>
-                                <select class="form-select @error('cover') is-invalid @enderror" name="cover"
-                                    dir="rtl" id="cover" style="width: 100%">
-                                    @if (isset($produk) && $produk->cover)
-                                        <option value="{{ $produk->cover }}" selected>
-                                            {{ $produk->cover }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('cover') is-invalid @enderror" name="cover"
+                                        dir="rtl" id="cover" style="width: 100%">
+                                        @if (isset($produk) && $produk->cover)
+                                            <option value="{{ $produk->cover }}" selected>
+                                                {{ $produk->cover }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('cover')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('cover')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -155,59 +177,76 @@
 
                             <div class="form-group">
                                 <label for="kertas">Kertas (Arab)</label>
-                                <select class="form-select @error('kertas') is-invalid @enderror" name="kertas"
-                                    dir="rtl" id="kertas" style="width: 100%">
-                                    @if (isset($produk) && $produk->kertas)
-                                        <option value="{{ $produk->kertas }}" selected>
-                                            {{ $produk->kertas }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('kertas') is-invalid @enderror" name="kertas"
+                                        dir="rtl" id="kertas" style="width: 100%">
+                                        @if (isset($produk) && $produk->kertas)
+                                            <option value="{{ $produk->kertas }}" selected>
+                                                {{ $produk->kertas }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('kertas')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('kertas')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-
                             <div class="form-group">
                                 <label for="kualitas">Kualitas (Arab)</label>
-                                <select class="form-select @error('kualitas') is-invalid @enderror" name="kualitas"
-                                    dir="rtl" id="kualitas" style="width: 100%">
-                                    @if (isset($produk) && $produk->kualitas)
-                                        <option value="{{ $produk->kualitas }}" selected>
-                                            {{ $produk->kualitas }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('kualitas') is-invalid @enderror" name="kualitas"
+                                        dir="rtl" id="kualitas" style="width: 100%">
+                                        @if (isset($produk) && $produk->kualitas)
+                                            <option value="{{ $produk->kualitas }}" selected>
+                                                {{ $produk->kualitas }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('kualitas')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('kualitas')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-
                             <div class="form-group">
                                 <label for="harakat">Harakat (Arab)</label>
-                                <select class="form-select @error('harakat') is-invalid @enderror" name="harakat"
-                                    dir="rtl" id="harakat" style="width: 100%">
-                                    @if (isset($produk) && $produk->harakat)
-                                        <option value="{{ $produk->harakat }}" selected>
-                                            {{ $produk->harakat }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('harakat') is-invalid @enderror" name="harakat"
+                                        dir="rtl" id="harakat" style="width: 100%">
+                                        @if (isset($produk) && $produk->harakat)
+                                            <option value="{{ $produk->harakat }}" selected>
+                                                {{ $produk->harakat }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('harakat')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('harakat')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
-
                             <div class="form-group">
                                 <label for="penulis">Penulis (Arab)</label>
-                                <select class="form-select @error('penulis') is-invalid @enderror" name="penulis"
-                                    dir="rtl" id="penulis" style="width: 100%">
-                                    @if (isset($produk) && $produk->penulis)
-                                        <option value="{{ $produk->penulis }}" selected>
-                                            {{ $produk->penulis }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('penulis') is-invalid @enderror" name="penulis"
+                                        dir="rtl" id="penulis" style="width: 100%">
+                                        @if (isset($produk) && $produk->penulis)
+                                            <option value="{{ $produk->penulis }}" selected>
+                                                {{ $produk->penulis }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('penulis')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('penulis')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -271,14 +310,19 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label for="supplier">Supplier</label>
-                                <select class="form-select @error('supplier') is-invalid @enderror" name="supplier"
-                                    id="supplier" style="width: 100%">
-                                    @if (isset($produk) && $produk->supplier)
-                                        <option value="{{ $produk->supplier }}" selected>
-                                            {{ $produk->nama_supplier }} | {{ $produk->telepon }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('supplier') is-invalid @enderror" name="supplier"
+                                        id="supplier" style="width: 100%">
+                                        @if (isset($produk) && $produk->supplier)
+                                            <option value="{{ $produk->supplier }}" selected>
+                                                {{ $produk->nama_supplier }} | {{ $produk->telepon }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('supplier')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('supplier')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -307,14 +351,19 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="ukuran">Ukuran</label>
-                                <select class="form-select @error('ukuran') is-invalid @enderror" name="ukuran"
-                                    id="ukuran" style="width: 100%">
-                                    @if (isset($produk) && $produk->ukuran)
-                                        <option value="{{ $produk->ukuran }}" selected>
-                                            {{ $produk->ukuran }}
-                                        </option>
-                                    @endif
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select @error('ukuran') is-invalid @enderror" name="ukuran"
+                                        id="ukuran" style="width: 100%">
+                                        @if (isset($produk) && $produk->ukuran)
+                                            <option value="{{ $produk->ukuran }}" selected>
+                                                {{ $produk->ukuran }}
+                                            </option>
+                                        @endif
+                                    </select>
+                                    <button type="button" class="btn btn-success" onclick="bukaModalTambah('ukuran')">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                                 @error('ukuran')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -322,8 +371,9 @@
                         </div>
                     </div>
 
+                    <!-- Tambahkan setelah bagian harga jual -->
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="harga_modal_display">Harga Modal</label>
                                 <input type="text" id="harga_modal_display" class="form-control"
@@ -334,7 +384,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="harga_jual_display">Harga Jual</label>
                                 <input type="text" id="harga_jual_display" class="form-control"
@@ -342,6 +392,17 @@
                                     placeholder="0">
                                 <input type="hidden" name="harga_jual" id="harga_jual"
                                     value="{{ old('harga_jual', $produk->harga_jual ?? '') }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="laba_display">Laba (Otomatis)</label>
+                                <input type="text" id="laba_display" class="form-control" readonly
+                                    value="{{ old('laba', isset($produk) ? number_format($produk->harga_jual - $produk->harga_modal, 0, ',', '.') : '0') }}"
+                                    placeholder="0" style="background-color: #e9ecef;">
+                                <input type="hidden" name="laba" id="laba"
+                                    value="{{ old('laba', isset($produk) ? $produk->harga_jual - $produk->harga_modal : '0') }}">
                             </div>
                         </div>
                     </div>
@@ -406,6 +467,75 @@
         </div>
     </div>
 
+
+    <div class="modal fade" id="tambahDataModal" tabindex="-1" aria-labelledby="tambahDataModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tambahDataModalLabel">Tambah Data Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tambahDataForm">
+                        @csrf
+                        <input type="hidden" name="type" id="modalType">
+                        <div class="form-group subkategori-field d-none">
+                            <label for="modalKategori">Kategori</label>
+                            <select class="form-select" name="kategori_id" id="modalKategori"
+                                style="width: 100%"></select>
+                        </div>
+                        <div class="form-group arab-field">
+                            <label for="modalNamaArab">Nama (Arab)</label>
+                            <input type="text" name="nama_arab" id="modalNamaArab" class="form-control text-right"
+                                dir="rtl" required>
+                        </div>
+
+                        <div class="form-group arab-field">
+                            <label for="modalNamaIndonesia">Nama (Indonesia)</label>
+                            <input type="text" name="nama_indonesia" id="modalNamaIndonesia" class="form-control"
+                                required>
+                        </div>
+
+                        <!-- Field khusus untuk supplier -->
+                        <div class="form-group supplier-field d-none">
+                            <label for="modalNamaSupplier">Nama Supplier</label>
+                            <input type="text" name="nama_supplier" id="modalNamaSupplier" class="form-control">
+                        </div>
+
+                        <div class="form-group supplier-field d-none">
+                            <label for="modalAlamat">Alamat</label>
+                            <textarea name="alamat" id="modalAlamat" class="form-control"></textarea>
+                        </div>
+
+
+                        <div class="form-group supplier-field d-none">
+                            <label for="modalTelepon">Telepon</label>
+                            <input type="text" name="telepon" id="modalTelepon" class="form-control">
+                        </div>
+
+                        <div class="form-group supplier-field d-none">
+                            <label for="modalEmail">Email</label>
+                            <input type="text" name="email" id="modalEmail" class="form-control">
+                        </div>
+
+                        <!-- Field khusus untuk ukuran -->
+                        <div class="form-group ukuran-field d-none">
+                            <label for="modalUkuran">Ukuran</label>
+                            <input type="text" name="ukuran" id="modalUkuran" class="form-control" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="simpanDataModal">
+                        <span class="btn-text">Simpan</span>
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
         window.produkData = @json(isset($produk) ? $produk : null);
 
@@ -428,11 +558,184 @@
         }
     </script>
 @endsection
+@push('style')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        .select2-container {
+            flex: 1 !important;
+        }
+
+        .input-group .select2-container .select2-selection {
+            height: calc(2.25rem + 2px) !important;
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
+
+        .input-group .btn {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+        }
+    </style>
+@endpush
 @push('js')
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
+        // Function untuk buka modal dengan tambahan kategori untuk subkategori
+        // Function untuk buka modal dengan tambahan kategori untuk subkategori
+        function bukaModalTambah(type) {
+            $('#modalType').val(type);
+            $('#tambahDataModalLabel').text('Tambah ' + type.replace(/_/g, ' ').toUpperCase());
+
+            // Sembunyikan semua field khusus
+            $('.arab-field, .supplier-field, .ukuran-field, .subkategori-field').addClass('d-none');
+
+            // Tampilkan field yang sesuai
+            if (type !== 'supplier' && type !== 'ukuran') {
+                $('.arab-field').removeClass('d-none');
+            }
+
+            if (type === 'supplier') {
+                $('.supplier-field').removeClass('d-none');
+            }
+
+            if (type === 'ukuran') {
+                $('.ukuran-field').removeClass('d-none');
+            }
+
+            // Tampilkan field kategori jika yang ditambah adalah sub_kategori
+            if (type === 'sub_kategori') {
+                $('.subkategori-field').removeClass('d-none');
+                loadKategoriOptions();
+            }
+
+            // Reset form
+            $('#tambahDataForm')[0].reset();
+            $('#tambahDataModal').modal('show');
+        }
+
+        // Handle simpan data modal dengan loading
+        $('#simpanDataModal').click(function() {
+            const type = $('#modalType').val();
+            const formData = new FormData($('#tambahDataForm')[0]);
+
+            // Tampilkan loading, sembunyikan teks
+            $(this).prop('disabled', true);
+            $(this).find('.btn-text').addClass('d-none');
+            $(this).find('.spinner-border').removeClass('d-none');
+
+            $.ajax({
+                url: "{{ route('kelola_data.produk.tambahData') }}",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        // Tambahkan opsi baru ke select2 yang sesuai
+                        if (type !== 'supplier' && type !== 'ukuran') {
+                            const newOption = new Option(response.data.nama_arab, response.data
+                                .nama_arab, true, true);
+                            $('#' + type).append(newOption).trigger('change');
+
+                            // Update field Indonesia jika ada
+                            if ($('#' + type + '_indonesia').length) {
+                                $('#' + type + '_indonesia').val(response.data.nama_indonesia);
+                            }
+                        } else if (type === 'supplier') {
+                            const newOption = new Option(response.data.text, response.data.id,
+                                true,
+                                true);
+                            $('#supplier').append(newOption).trigger('change');
+                        } else if (type === 'ukuran') {
+                            const newOption = new Option(response.data.ukuran, response.data
+                                .ukuran,
+                                true, true);
+                            $('#ukuran').append(newOption).trigger('change');
+                        }
+
+                        $('#tambahDataModal').modal('hide');
+
+                        // Tampilkan toast sukses
+                        toastr.success('Data berhasil ditambahkan');
+                    }
+
+                    // Kembalikan tombol ke keadaan semula
+                    $('#simpanDataModal').prop('disabled', false);
+                    $('#simpanDataModal').find('.btn-text').removeClass('d-none');
+                    $('#simpanDataModal').find('.spinner-border').addClass('d-none');
+                },
+                error: function(xhr) {
+                    // Tampilkan toast error
+                    toastr.error('Gagal menambahkan data: ' + (xhr.responseJSON?.message ||
+                        'Terjadi kesalahan'));
+
+                    // Kembalikan tombol ke keadaan semula
+                    $('#simpanDataModal').prop('disabled', false);
+                    $('#simpanDataModal').find('.btn-text').removeClass('d-none');
+                    $('#simpanDataModal').find('.spinner-border').addClass('d-none');
+                }
+            });
+        });
+
+        // Function untuk memuat opsi kategori
+        function loadKategoriOptions() {
+            $('#modalKategori').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Silahkan Pilih Kategori",
+                minimumInputLength: 0,
+                dropdownParent: $('#tambahDataModal'),
+                ajax: {
+                    url: "{{ route('kelola_data.produk.getkategori1') }}",
+                    dataType: 'json',
+                    type: "POST",
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: $.trim(params.term),
+                            _token: "{{ csrf_token() }}"
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    text: item.nama_arab + ' | ' + item.nama_indonesia,
+                                    nama_arab: item.nama_arab,
+                                    nama_indonesia: item.nama_indonesia
+                                }
+                            })
+                        };
+                    },
+                    cache: true
+                }
+            });
+        }
+
+
+
         $(document).ready(function() {
+            const select2Fields = ['kategori', 'sub_kategori', 'penerbit', 'cover', 'kertas', 'kualitas',
+                'harakat',
+                'penulis', 'supplier', 'ukuran'
+            ];
+
+            select2Fields.forEach(function(field) {
+                // Buat wrapper dan tombol
+                const wrapper = $('#' + field).parent();
+                wrapper.addClass('input-group');
+
+                if (!wrapper.find('.btn-success').length) {
+                    const button = $(`<button type="button" class="btn btn-success" onclick="bukaModalTambah('${field}')">
+            <i class="fas fa-plus"></i>
+        </button>`);
+
+                    wrapper.append(button);
+                }
+            });
             // Load kolom dinamis saat halaman dimuat
             loadDynamicFields();
 
@@ -444,8 +747,10 @@
                     if (data.success && data.columns.length > 0) {
                         data.columns.forEach(function(column) {
                             // Skip kolom yang sudah ada di form utama
-                            if (['judul', 'kategori', 'penerbit', 'cover', 'kertas', 'kualitas',
-                                    'harakat', 'penulis', 'supplier', 'halaman', 'berat', 'ukuran',
+                            if (['judul', 'kategori', 'penerbit', 'cover', 'kertas',
+                                    'kualitas',
+                                    'harakat', 'penulis', 'supplier', 'halaman', 'berat',
+                                    'ukuran',
                                     'harga_modal',
                                     'harga_jual', 'stok', 'kd_produk', 'id', 'created_at',
                                     'updated_at', 'deleted_at'
@@ -533,6 +838,26 @@
                 }
             });
 
+            // Function untuk menghitung laba
+            function calculateProfit() {
+                const hargaModal = parseInt(cleanNumber($('#harga_modal').val()) || 0);
+                const hargaJual = parseInt(cleanNumber($('#harga_jual').val()) || 0);
+                const laba = hargaJual - hargaModal;
+
+                $('#laba').val(laba);
+                $('#laba_display').val(formatNumber(laba));
+            }
+
+            // Panggil calculateProfit saat harga modal/jual berubah
+            $('#harga_modal_display, #harga_jual_display').on('input', function() {
+                calculateProfit();
+            });
+
+            // Juga panggil saat halaman dimuat untuk mengisi nilai awal
+            $(document).ready(function() {
+                calculateProfit();
+            });
+
             // Replace the kategori select2 initialization with this:
             $('#kategori').select2({
                 theme: "bootstrap-5",
@@ -601,12 +926,13 @@
             });
 
             function loadSubKategori(kategoriNamaArab) {
+
                 $('#sub_kategori').select2({
                     theme: "bootstrap-5",
                     width: "100%",
                     placeholder: "Silahkan Pilih Sub Kategori",
                     minimumInputLength: 0,
-                    dropdownParent: $('.card-body'),
+                    dropdownParent: $('body'),
                     ajax: {
                         url: "{{ route('kelola_data.produk.getsubkategori') }}",
                         dataType: 'json',
@@ -720,6 +1046,20 @@
 
                     return data.id;
                 }
+            });
+
+            $('#sub_kategori').select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                placeholder: "Pilih kategori terlebih dahulu",
+                minimumInputLength: 0,
+                dropdownParent: $('body'),
+                data: [] // Start with empty data
+            });
+
+            $('#sub_kategori').on('select2:select', function(e) {
+                var data = e.params.data;
+                $('#sub_kategori_indonesia').val(data.nama_indonesia);
             });
 
             // Update the kategori selection handler

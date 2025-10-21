@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BarangKeluarController extends Controller
 {
@@ -145,6 +146,7 @@ class BarangKeluarController extends Controller
                 'id_produk' => $request->id_produk,
                 'stok_keluar' => $request->stok_keluar,
                 'notes' => $request->notes,
+                'user_id'     => Auth::id(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -222,6 +224,7 @@ class BarangKeluarController extends Controller
                     'id_produk' => $request->id_produk,
                     'stok_keluar' => $request->stok_keluar,
                     'notes' => $request->notes,
+                    'user_id'     => Auth::id(),
                     'updated_at' => now(),
                 ]);
 

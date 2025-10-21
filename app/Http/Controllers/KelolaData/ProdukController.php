@@ -9,6 +9,9 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\RiwayatProdukExport;
 
 
 
@@ -23,6 +26,127 @@ class ProdukController extends Controller
         return view('kelola_data.produk.index', compact('kategoris', 'penerbits', 'suppliers', 'penulis'));
     }
 
+    public function tambahData(Request $request)
+    {
+        try {
+            $type = $request->type;
+            $tableMap = [
+                'kategori' => 'kategori',
+                'sub_kategori' => 'sub_kategori',
+                'penerbit' => 'penerbit',
+                'cover' => 'cover',
+                'kertas' => 'kertas',
+                'kualitas' => 'kualitas',
+                'harakat' => 'harakat',
+                'penulis' => 'penulis',
+                'supplier' => 'supplier',
+                'ukuran' => 'ukuran'
+            ];
+
+            if (!array_key_exists($type, $tableMap)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe data tidak valid'
+                ], 400);
+            }
+
+            $table = $tableMap[$type];
+
+            if ($type === 'supplier') {
+                $request->validate([
+                    'nama_supplier' => 'required|string|max:255',
+                    'alamat' => 'nullable|string',
+                    'telepon' => 'nullable|string|max:20',
+                    'email' => 'nullable|string'
+                ]);
+
+                $id = DB::table($table)->insertGetId([
+                    'nama_supplier' => $request->nama_supplier,
+                    'alamat' => $request->alamat,
+                    'telepon' => $request->telepon,
+                    'email' => $request->email,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $id,
+                        'text' => $request->nama_supplier . ' | ' . $request->telepon
+                    ]
+                ]);
+            } elseif ($type === 'ukuran') {
+                $request->validate([
+                    'ukuran' => 'required|string|max:100|unique:ukuran,ukuran'
+                ]);
+
+                DB::table($table)->insert([
+                    'ukuran' => $request->ukuran
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'ukuran' => $request->ukuran
+                    ]
+                ]);
+            } else {
+                // Validasi khusus untuk sub_kategori
+                if ($type === 'sub_kategori') {
+                    $request->validate([
+                        'nama_arab' => 'required|string|max:255',
+                        'nama_indonesia' => 'required|string|max:255',
+                        'kategori_id' => 'required|exists:kategori,id'
+                    ]);
+                } else {
+                    $request->validate([
+                        'nama_arab' => 'required|string|max:255',
+                        'nama_indonesia' => 'required|string|max:255'
+                    ]);
+                }
+
+                // Cek duplikasi
+                $existing = DB::table($table)
+                    ->where('nama_arab', $request->nama_arab)
+                    ->first();
+
+                if ($existing) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Data sudah ada'
+                    ], 400);
+                }
+
+                // Data untuk insert
+                $data = [
+                    'nama_arab' => $request->nama_arab,
+                    'nama_indonesia' => $request->nama_indonesia,
+                ];
+
+                // Tambahkan kategori_id jika yang ditambah adalah sub_kategori
+                if ($type === 'sub_kategori') {
+                    $data['id_kategori'] = $request->kategori_id;
+                }
+
+                DB::table($table)->insert($data);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'nama_arab' => $request->nama_arab,
+                        'nama_indonesia' => $request->nama_indonesia
+                    ]
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function api_index(Request $request)
     {
         try {
@@ -35,6 +159,9 @@ class ProdukController extends Controller
                     'produk.kategori',
                     'produk.sub_kategori',
                     'produk.penulis',
+                    'produk.penerbit',
+                    'produk.harakat',
+                    'produk.cover',
                     'produk.stok',
                     'produk.images',
                     'produk.harga_jual',
@@ -46,6 +173,19 @@ class ProdukController extends Controller
             // Tambahkan filter jika ada parameter kategori
             if ($request->has('kategori')) {
                 $query->where('produk.kategori', $request->kategori);
+            }
+
+            if ($request->has('penulis')) {
+                $query->where('produk.penulis', $request->penulis);
+            }
+            if ($request->has('penerbit')) {
+                $query->where('produk.penerbit', $request->penerbit);
+            }
+            if ($request->has('harakat')) {
+                $query->where('produk.harakat', $request->harakat);
+            }
+            if ($request->has('cover')) {
+                $query->where('produk.cover', $request->cover);
             }
 
             // Tambahkan filter jika ada parameter subkategori
@@ -197,7 +337,7 @@ class ProdukController extends Controller
     {
         // dd($request->all());
         $query = DB::table('produk')
-            ->join('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->leftJoin('supplier', 'produk.supplier', '=', 'supplier.id')
             ->select([
                 'produk.id',
                 'produk.kd_produk',
@@ -205,7 +345,7 @@ class ProdukController extends Controller
                 'produk.penulis',
                 'produk.kategori',
                 'produk.penerbit',
-                'supplier.nama_supplier as supplier',
+                DB::raw('COALESCE(supplier.nama_supplier, "Tidak ada supplier") as supplier'),
                 'produk.stok',
                 'produk.harga_modal',
                 'produk.images',
@@ -216,30 +356,28 @@ class ProdukController extends Controller
         if ($request->has('columns')) {
             foreach ($request->columns as $column) {
                 if ($column['search']['value'] != '') {
-                    $columnIndex = $column['data'];
                     $searchValue = $column['search']['value'];
-
-                    switch ($columnIndex) {
-                        case '0':
-                            $query->where('kd_produk', 'like', "%{$searchValue}%");
+                    switch ($column['data']) {
+                        case 'kd_produk':
+                            $query->where('produk.kd_produk', 'like', "%{$searchValue}%");
                             break;
-                        case '1': // Judul
-                            $query->where('judul', 'like', "%{$searchValue}%");
+                        case 'judul':
+                            $query->where('produk.judul', 'like', "%{$searchValue}%");
                             break;
-                        case '2': // penulis
-                            $query->where('penulis', $searchValue);
+                        case 'penulis':
+                            $query->where('produk.penulis', $searchValue);
                             break;
-                        case '3': // Kategori
-                            $query->where('kategori', $searchValue);
+                        case 'kategori':
+                            $query->where('produk.kategori', $searchValue);
                             break;
-                        case '4': // Penerbit
-                            $query->where('penerbit', $searchValue);
+                        case 'penerbit':
+                            $query->where('produk.penerbit', $searchValue);
                             break;
-                        case '5': // Supplier
+                        case 'supplier':
                             $query->where('supplier.id', $searchValue);
                             break;
-                        case '6': // Stok
-                            $query->where('stok', 'like', "%{$searchValue}%");
+                        case 'stok':
+                            $query->where('produk.stok', 'like', "%{$searchValue}%");
                             break;
                     }
                 }
@@ -249,11 +387,16 @@ class ProdukController extends Controller
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
-                $viewButton = '<a href="' . route('kelola_data.produk.show', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-info me-1"><i class="fas fa-eye"></i></a>';
-                $editButton = '<a href="' . route('kelola_data.produk.edit', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-warning me-1"><i class="fas fa-edit"></i></a>';
+                $riwayatButton = '<a href="' . route('kelola_data.produk.riwayat', Crypt::encrypt($row->id)) . '"
+                        class="btn btn-sm btn-secondary me-1"
+                        title="Riwayat Produk">
+                        <i class="fas fa-history"></i>
+                      </a>';
+                $viewButton = '<a href="' . route('kelola_data.produk.show', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-info me-1" title="Lihat Detail"><i class="fas fa-eye"></i></a>';
+                $editButton = '<a href="' . route('kelola_data.produk.edit', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-warning me-1" title="Edit Produk"><i class="fas fa-edit"></i></a>';
                 $barcodeButton = '<button class="btn btn-sm btn-primary me-1 barcode-btn" data-kd="' . $row->kd_produk . '" data-judul="' . $row->judul . '"><i class="fas fa-barcode"></i></button>';
                 $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('kelola_data.produk.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
-                return $viewButton . $editButton . $barcodeButton . $deleteButton;
+                return $riwayatButton . $viewButton . $editButton . $barcodeButton . $deleteButton;
             })
             ->rawColumns(['aksi', 'images'])
             ->make(true);
@@ -309,7 +452,7 @@ class ProdukController extends Controller
             $columns = DB::getSchemaBuilder()->getColumnListing('produk');
 
             // Filter kolom yang tidak ingin ditampilkan
-            $excludedColumns = ['id', 'kd_produk', 'sub_kategori', 'images', 'penulis', 'link_youtube', 'created_at', 'updated_at', 'deleted_at'];
+            $excludedColumns = ['id', 'kd_produk', 'sub_kategori', 'images', 'penulis', 'link_youtube', 'laba', 'created_at', 'updated_at', 'deleted_at'];
             $dynamicColumns = array_diff($columns, $excludedColumns);
 
             return response()->json([
@@ -369,6 +512,7 @@ class ProdukController extends Controller
                 'harga_modal',
                 'harga_jual',
                 'stok',
+                'laba',
                 'penulis',
                 'images',
                 'created_at',
@@ -401,29 +545,29 @@ class ProdukController extends Controller
             'judul_arab' => 'required|string|max:255',
             'judul_indonesia' => 'required|string|max:255',
             'link_youtube' => 'nullable|string|url|max:255',
-            'kategori' => 'required',
-            'kategori_indonesia' => 'required',
-            'sub_kategori' => 'required',
-            'sub_kategori_indonesia' => 'required',
-            'penerbit' => 'required',
-            'penerbit_indonesia' => 'required',
-            'cover' => 'required',
-            'cover_indonesia' => 'required',
-            'kertas' => 'required',
-            'kertas_indonesia' => 'required',
-            'kualitas' => 'required',
-            'kualitas_indonesia' => 'required',
-            'harakat' => 'required',
-            'harakat_indonesia' => 'required',
-            'penulis' => 'required',
-            'penulis_indonesia' => 'required',
-            'supplier' => 'required',
-            'halaman' => 'required|integer',
-            'berat' => 'required',
-            'ukuran' => 'required|string',
-            'harga_modal' => 'required|numeric',
-            'harga_jual' => 'required|numeric',
-            'stok' => 'required|integer',
+            'kategori' => 'nullable',
+            'kategori_indonesia' => 'nullable',
+            'sub_kategori' => 'nullable',
+            'sub_kategori_indonesia' => 'nullable',
+            'penerbit' => 'nullable',
+            'penerbit_indonesia' => 'nullable',
+            'cover' => 'nullable',
+            'cover_indonesia' => 'nullable',
+            'kertas' => 'nullable',
+            'kertas_indonesia' => 'nullable',
+            'kualitas' => 'nullable',
+            'kualitas_indonesia' => 'nullable',
+            'harakat' => 'nullable',
+            'harakat_indonesia' => 'nullable',
+            'penulis' => 'nullable',
+            'penulis_indonesia' => 'nullable',
+            'supplier' => 'nullable',
+            'halaman' => 'nullable|integer',
+            'berat' => 'nullable',
+            'ukuran' => 'nullable|string',
+            'harga_modal' => 'nullable|numeric',
+            'harga_jual' => 'nullable|numeric',
+            'stok' => 'nullable|integer',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
@@ -494,6 +638,7 @@ class ProdukController extends Controller
                 'ukuran' => $request->ukuran,
                 'harga_modal' => $request->harga_modal,
                 'harga_jual' => $request->harga_jual,
+                'laba' => $request->harga_jual - $request->harga_modal,
                 'stok' => $request->stok,
                 'images' => !empty($imageNames) ? json_encode($imageNames) : null,
                 'link_youtube' => $request->link_youtube,
@@ -567,29 +712,29 @@ class ProdukController extends Controller
             'judul_arab' => 'required|string|max:255',
             'judul_indonesia' => 'required|string|max:255',
             'link_youtube' => 'nullable|string|url|max:255',
-            'kategori' => 'required',
-            'kategori_indonesia' => 'required',
-            'sub_kategori' => 'required',
-            'sub_kategori_indonesia' => 'required',
-            'penerbit' => 'required',
-            'penerbit_indonesia' => 'required',
-            'cover' => 'required',
-            'cover_indonesia' => 'required',
-            'kertas' => 'required',
-            'kertas_indonesia' => 'required',
-            'kualitas' => 'required',
-            'kualitas_indonesia' => 'required',
-            'harakat' => 'required',
-            'harakat_indonesia' => 'required',
-            'penulis' => 'required',
-            'penulis_indonesia' => 'required',
-            'supplier' => 'required',
-            'halaman' => 'required|integer',
-            'berat' => 'required',
-            'ukuran' => 'required|string',
-            'harga_modal' => 'required|numeric',
-            'harga_jual' => 'required|numeric',
-            'stok' => 'required|integer',
+            'kategori' => 'nullable',
+            'kategori_indonesia' => 'nullable',
+            'sub_kategori' => 'nullable',
+            'sub_kategori_indonesia' => 'nullable',
+            'penerbit' => 'nullable',
+            'penerbit_indonesia' => 'nullable',
+            'cover' => 'nullable',
+            'cover_indonesia' => 'nullable',
+            'kertas' => 'nullable',
+            'kertas_indonesia' => 'nullable',
+            'kualitas' => 'nullable',
+            'kualitas_indonesia' => 'nullable',
+            'harakat' => 'nullable',
+            'harakat_indonesia' => 'nullable',
+            'penulis' => 'nullable',
+            'penulis_indonesia' => 'nullable',
+            'supplier' => 'nullable',
+            'halaman' => 'nullable|integer',
+            'berat' => 'nullable',
+            'ukuran' => 'nullable|string',
+            'harga_modal' => 'nullable|numeric',
+            'harga_jual' => 'nullable|numeric',
+            'stok' => 'nullable|integer',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'delete_images.*' => 'sometimes|string'
         ], [
@@ -684,6 +829,7 @@ class ProdukController extends Controller
                 'ukuran' => $request->ukuran,
                 'harga_modal' => $request->harga_modal,
                 'harga_jual' => $request->harga_jual,
+                'laba' => $request->harga_jual - $request->harga_modal,
                 'stok' => $request->stok,
                 'images' => !empty($imageNames) ? json_encode($imageNames) : null,
                 'link_youtube' => $request->link_youtube,
@@ -768,14 +914,216 @@ class ProdukController extends Controller
 
         $produk = DB::table('produk')
             ->join('produk_indo', 'produk.id', '=', 'produk_indo.id_produk')
-            ->join('supplier', 'produk.supplier', '=', 'supplier.id')
-            ->select('produk.*', 'produk.id as id_produk_asli', 'produk_indo.*', 'supplier.nama_supplier', 'supplier.telepon')
+            ->leftJoin('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->select(
+                'produk.*',
+                'produk.id as id_produk_asli',
+                'produk_indo.*',
+                DB::raw('COALESCE(supplier.nama_supplier, "Tidak ada supplier") as nama_supplier'),
+                DB::raw('COALESCE(supplier.telepon, "-") as telepon')
+            )
             ->where('produk.id', $decryptedId)
             ->first();
 
         return view('kelola_data.produk.create', compact('produk'));
     }
 
+    public function riwayat($id)
+    {
+        $decryptedId = Crypt::decrypt($id);
+
+        $produk = DB::table('produk')
+            ->join('produk_indo', 'produk.id', '=', 'produk_indo.id_produk')
+            ->leftJoin('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->select(
+                'produk.*',
+                'produk.id as id_produk_asli',
+                'produk_indo.*',
+                DB::raw('COALESCE(supplier.nama_supplier, "Tidak ada supplier") as nama_supplier'),
+                DB::raw('COALESCE(supplier.telepon, "-") as telepon')
+            )
+            ->where('produk.id', $decryptedId)
+            ->first();
+
+        return view('kelola_data.produk.riwayat', compact('produk'));
+    }
+
+    public function load_riwayat(Request $request)
+    {
+        $id_produk = $request->input('id_produk');
+        $tanggalAwal = $request->input('tanggal_awal');
+        $tanggalAkhir = $request->input('tanggal_akhir');
+        $filterType = $request->input('type');
+        $filterUser = $request->input('user');
+
+        if (!$id_produk) {
+            return DataTables::of([])->make(true);
+        }
+
+        $barangMasuk = DB::table('barang_masuk')
+            ->leftJoin('users', 'barang_masuk.user_id', '=', 'users.id')
+            ->where('barang_masuk.id_produk', $id_produk)
+            ->select(
+                'barang_masuk.created_at',
+                DB::raw('barang_masuk.stok_masuk as qty'),
+                DB::raw("'Masuk' as type"),
+                'barang_masuk.notes',
+                DB::raw('COALESCE(users.name, "System") as user')
+            );
+
+        $barangKeluar = DB::table('barang_keluar')
+            ->leftJoin('users', 'barang_keluar.user_id', '=', 'users.id')
+            ->where('barang_keluar.id_produk', $id_produk)
+            ->select(
+                'barang_keluar.created_at',
+                DB::raw('barang_keluar.stok_keluar as qty'),
+                DB::raw("'Keluar' as type"),
+                'barang_keluar.notes',
+                DB::raw('COALESCE(users.name, "System") as user')
+            );
+
+        $transaksi = DB::table('transaksi_items')
+            ->leftJoin('transaksi', 'transaksi.id', '=', 'transaksi_items.id_transaksi')
+            ->leftJoin('produk', 'produk.kd_produk', '=', 'transaksi_items.kd_produk')
+            ->where('produk.id', $id_produk)
+            ->select(
+                'transaksi_items.created_at',
+                'transaksi_items.quantity as qty',
+                DB::raw("'Transaksi' as type"),
+                DB::raw('"Penjualan" as notes'),
+                DB::raw('
+                CASE
+                    WHEN transaksi.nama_customer IS NOT NULL AND transaksi.nama_customer != ""
+                        THEN transaksi.nama_customer
+                    WHEN transaksi.nama_pengirim IS NOT NULL AND transaksi.nama_pengirim != ""
+                        THEN transaksi.nama_pengirim
+                    ELSE "System"
+                END as user
+            ')
+            );
+
+        $riwayatUnion = $barangMasuk->union($barangKeluar)->union($transaksi);
+
+        $riwayat = DB::query()
+            ->fromSub($riwayatUnion, 'riwayat')
+            ->when($tanggalAwal && $tanggalAkhir, function ($q) use ($tanggalAwal, $tanggalAkhir) {
+                $q->whereBetween(DB::raw('DATE(riwayat.created_at)'), [$tanggalAwal, $tanggalAkhir]);
+            })
+            ->when($filterType, function ($q) use ($filterType) {
+                $q->where('riwayat.type', $filterType);
+            })
+            ->when($filterUser, function ($q) use ($filterUser) {
+                $q->where('riwayat.user', 'like', "%$filterUser%");
+            })
+            ->orderBy('created_at', 'desc');
+
+        return DataTables::of($riwayat)
+            ->addIndexColumn()
+            ->addColumn('tanggal', fn($row) => date('d-m-Y', strtotime($row->created_at)))
+            ->addColumn('jam', fn($row) => date('H:i:s', strtotime($row->created_at)))
+            ->make(true);
+    }
+
+
+
+    public function exportPdf(Request $request)
+    {
+        $riwayat = $this->getRiwayatFiltered($request);
+        $produk = DB::table('produk')
+            ->join('produk_indo', 'produk.id', '=', 'produk_indo.id_produk')
+            ->where('produk.id', $request->id_produk)
+            ->first();
+
+        $data = [
+            'riwayat' => $riwayat,
+            'produk' => $produk,
+            'tanggal_awal' => $request->tanggal_awal,
+            'tanggal_akhir' => $request->tanggal_akhir,
+            'filter_type' => $request->type,
+            'filter_user' => $request->user,
+        ];
+
+        $pdf = PDF::loadView('exports.riwayat-pdf', $data);
+        return $pdf->download('riwayat-produk-' . date('Y-m-d') . '.pdf');
+    }
+
+    // Export Excel
+    public function exportExcel(Request $request)
+    {
+        $riwayat = $this->getRiwayatFiltered($request);
+        $produk = DB::table('produk')
+            ->join('produk_indo', 'produk.id', '=', 'produk_indo.id_produk')
+            ->where('produk.id', $request->id_produk)
+            ->first();
+
+        return Excel::download(
+            new RiwayatProdukExport($riwayat, $produk, $request->all()),
+            'riwayat-produk-' . date('Y-m-d') . '.xlsx'
+        );
+    }
+
+    private function getRiwayatFiltered(Request $request)
+    {
+        $id_produk = $request->input('id_produk');
+        $tanggalAwal = $request->input('tanggal_awal');
+        $tanggalAkhir = $request->input('tanggal_akhir');
+        $filterType = $request->input('type');
+        $filterUser = $request->input('user');
+
+        $barangMasuk = DB::table('barang_masuk')
+            ->leftJoin('users', 'barang_masuk.user_id', '=', 'users.id')
+            ->where('barang_masuk.id_produk', $id_produk)
+            ->select(
+                'barang_masuk.created_at',
+                DB::raw('barang_masuk.stok_masuk as qty'),
+                DB::raw("'Masuk' as type"),
+                'barang_masuk.notes',
+                DB::raw('COALESCE(users.name, "System") as user')
+            );
+
+        $barangKeluar = DB::table('barang_keluar')
+            ->leftJoin('users', 'barang_keluar.user_id', '=', 'users.id')
+            ->where('barang_keluar.id_produk', $id_produk)
+            ->select(
+                'barang_keluar.created_at',
+                DB::raw('barang_keluar.stok_keluar as qty'),
+                DB::raw("'Keluar' as type"),
+                'barang_keluar.notes',
+                DB::raw('COALESCE(users.name, "System") as user')
+            );
+
+        $transaksi = DB::table('transaksi_items')
+            ->leftJoin('transaksi', 'transaksi.id', '=', 'transaksi_items.id_transaksi')
+            ->leftJoin('produk', 'produk.kd_produk', '=', 'transaksi_items.kd_produk')
+            ->where('produk.id', $id_produk)
+            ->select(
+                'transaksi_items.created_at',
+                'transaksi_items.quantity as qty',
+                DB::raw("'Transaksi' as type"),
+                DB::raw('"Penjualan" as notes'),
+                DB::raw('
+                CASE
+                    WHEN transaksi.nama_customer IS NOT NULL AND transaksi.nama_customer != ""
+                        THEN transaksi.nama_customer
+                    WHEN transaksi.nama_pengirim IS NOT NULL AND transaksi.nama_pengirim != ""
+                        THEN transaksi.nama_pengirim
+                    ELSE "System"
+                END as user
+            ')
+            );
+
+        $riwayatUnion = $barangMasuk->union($barangKeluar)->union($transaksi);
+
+        return DB::query()
+            ->fromSub($riwayatUnion, 'riwayat')
+            ->when($tanggalAwal && $tanggalAkhir, function ($q) use ($tanggalAwal, $tanggalAkhir) {
+                $q->whereBetween(DB::raw('DATE(riwayat.created_at)'), [$tanggalAwal, $tanggalAkhir]);
+            })
+            ->when($filterType, fn($q) => $q->where('riwayat.type', $filterType))
+            ->when($filterUser, fn($q) => $q->where('riwayat.user', 'like', "%$filterUser%"))
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
 
 
     public function destroy($id)
@@ -829,6 +1177,32 @@ class ProdukController extends Controller
         $data = $kategoris->map(function ($item) {
             return [
                 'id' => $item->nama_arab,
+                'nama_arab' => $item->nama_arab,
+                'nama_indonesia' => $item->nama_indonesia,
+                'text' => $item->nama_arab . ' | ' . $item->nama_indonesia
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+
+    public function getkategori1(Request $request)
+    {
+        $search = $request->q;
+
+        $kategoris = DB::table('kategori')
+            ->select('id', 'nama_arab', 'nama_indonesia')
+            ->when(!empty($search), function ($query) use ($search) {
+                $query->where('nama_arab', 'LIKE', "%{$search}%")
+                    ->orWhere('nama_indonesia', 'LIKE', "%{$search}%");
+            })
+            ->limit(10)
+            ->get();
+
+        $data = $kategoris->map(function ($item) {
+            return [
+                'id' => $item->id,
                 'nama_arab' => $item->nama_arab,
                 'nama_indonesia' => $item->nama_indonesia,
                 'text' => $item->nama_arab . ' | ' . $item->nama_indonesia

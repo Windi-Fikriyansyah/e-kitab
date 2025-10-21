@@ -56,34 +56,120 @@ class TransaksiPenjualanController extends Controller
     public function cetakInvoice($id)
     {
         $transaksi = DB::table('transaksi')
-            ->where('id', $id)
+            ->leftJoin('ekspedisi', 'transaksi.ekspedisi', '=', 'ekspedisi.nama_ekspedisi')
+            ->where('transaksi.id', $id)
+            ->select('transaksi.*', 'ekspedisi.nama_ekspedisi', 'ekspedisi.ekspedisi_logo')
             ->first();
 
-        if (!$transaksi) {
-            abort(404);
-        }
+        if (!$transaksi) abort(404);
 
+        // Kunci per baris item & urutkan — cegah duplikat karena JOIN
         $items = DB::table('transaksi_items')
             ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
-            ->where('id_transaksi', $id)
-            ->select('transaksi_items.*', 'produk.judul', 'produk.penulis')
+            ->where('transaksi_items.id_transaksi', $id)
+            ->select([
+                'transaksi_items.id',
+                'transaksi_items.kd_produk',
+                'transaksi_items.quantity',
+                'transaksi_items.unit_price',
+                'transaksi_items.original_price',
+                'transaksi_items.is_custom_price',
+                'transaksi_items.total_price',
+                'produk.judul',
+                'produk.penulis',
+                'produk.penerbit',
+            ])
+            ->orderBy('transaksi_items.id')          // urut stabil
+            ->groupBy(                                // kunci baris unik
+                'transaksi_items.id',
+                'transaksi_items.kd_produk',
+                'transaksi_items.quantity',
+                'transaksi_items.unit_price',
+                'transaksi_items.original_price',
+                'transaksi_items.is_custom_price',
+                'transaksi_items.total_price',
+                'produk.judul',
+                'produk.penulis',
+                'produk.penerbit'
+            )
             ->get();
+
         $profilPerusahaan = DB::table('profile_perusahaan')->first();
 
         return view('transaksi.transaksi_penjualan.invoice', compact('transaksi', 'items', 'profilPerusahaan'));
     }
 
+    public function cetakInvoiceThermal($id)
+    {
+        $transaksi = DB::table('transaksi')
+            ->leftJoin('ekspedisi', 'transaksi.ekspedisi', '=', 'ekspedisi.nama_ekspedisi')
+            ->where('transaksi.id', $id)
+            ->select('transaksi.*', 'ekspedisi.nama_ekspedisi', 'ekspedisi.ekspedisi_logo')
+            ->first();
+
+        if (!$transaksi) abort(404);
+
+        $items = DB::table('transaksi_items')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('transaksi_items.id_transaksi', $id)
+            ->select([
+                'transaksi_items.id',
+                'transaksi_items.kd_produk',
+                'transaksi_items.quantity',
+                'transaksi_items.unit_price',
+                'transaksi_items.total_price',
+                'produk.judul',
+            ])
+            ->orderBy('transaksi_items.id')
+            ->groupBy(
+                'transaksi_items.id',
+                'transaksi_items.kd_produk',
+                'transaksi_items.quantity',
+                'transaksi_items.unit_price',
+                'transaksi_items.total_price',
+                'produk.judul'
+            )
+            ->get();
+
+        $profilPerusahaan = DB::table('profile_perusahaan')->first();
+
+        // Hitung komponen untuk struk
+        $subtotal   = $transaksi->subtotal ?? $items->sum('total_price');
+        $diskon     = (float) ($transaksi->discount ?? 0);
+        $potongan   = (float) ($transaksi->potongan ?? 0);
+        $ongkir     = (float) ($transaksi->ongkir ?? 0);
+        $packing    = (float) ($transaksi->packing_kayu ?? 0);
+        $grandTotal = (float) ($transaksi->total ?? ($subtotal - $diskon - $potongan + $ongkir + $packing));
+        $dibayar    = (float) ($transaksi->paid_amount ?? 0);
+        $kembali    = (float) ($transaksi->change_amount ?? max(0, $dibayar - $grandTotal));
+        $sisa       = (float) ($transaksi->remaining_amount ?? max(0, $grandTotal - $dibayar));
+
+        return view('transaksi.transaksi_penjualan.invoice_thermal', compact(
+            'transaksi',
+            'items',
+            'profilPerusahaan',
+            'subtotal',
+            'diskon',
+            'potongan',
+            'ongkir',
+            'packing',
+            'grandTotal',
+            'dibayar',
+            'kembali',
+            'sisa'
+        ));
+    }
+
+
     public function simpanTransaksi(Request $request)
     {
-
-
-
         DB::beginTransaction();
         try {
-            // Validasi input
+            // Validasi input dasar
             $request->validate([
+                'channel_order' => 'required',
                 'customer' => 'nullable|exists:customer,id',
-                'payment_method' => 'required|in:tunai,transfer,dp',
+                'payment_method' => 'required|in:tunai,transfer,qris,dp,cod',
                 'payment_status' => 'required|in:lunas,hutang',
                 'items' => 'required|array|min:1',
                 'items.*.kd_produk' => 'required|exists:produk,kd_produk',
@@ -96,7 +182,7 @@ class TransaksiPenjualanController extends Controller
                 'paid_amount' => 'required|numeric|min:0',
                 'used_deposit' => 'numeric|min:0',
                 'ekspedisi' => 'nullable|string|max:255',
-                'ekspedisi_lain' => 'nullable|required_if:ekspedisi,Lainnya|string|max:255',
+                'ekspedisi_lain' => 'nullable|string|max:255',
                 'notes' => 'nullable|string',
                 'potongan' => 'numeric|min:0',
                 'is_dropship' => 'sometimes|boolean',
@@ -106,44 +192,80 @@ class TransaksiPenjualanController extends Controller
                 'nama_penerima' => 'nullable|string|max:255',
                 'telepon_penerima' => 'nullable|string|max:20',
                 'alamat_penerima' => 'nullable|string',
-
+                'ongkir' => 'numeric|min:0',
+                'packing_kayu' => 'numeric|min:0',
             ]);
 
+            // Variabel untuk menyimpan nama ekspedisi yang akan disimpan
+            $namaEkspedisi = $request->ekspedisi;
+            $ekspedisiLogoPath = null;
 
+            // Jika memilih "Lainnya", proses ekspedisi baru
+            if ($request->ekspedisi === 'Lainnya') {
+                // Validasi khusus untuk ekspedisi lainnya
+                $request->validate([
+                    'ekspedisi_lain' => 'required|string|max:255',
+                    'ekspedisi_logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+                ]);
 
-            // Generate kode transaksi
+                $namaEkspedisi = $request->ekspedisi_lain;
+
+                // Cek apakah ekspedisi dengan nama yang sama sudah ada
+                $existingEkspedisi = DB::table('ekspedisi')
+                    ->where('nama_ekspedisi', $namaEkspedisi)
+                    ->first();
+
+                if (!$existingEkspedisi) {
+                    // Upload logo jika ada
+                    if ($request->hasFile('ekspedisi_logo')) {
+                        $logo = $request->file('ekspedisi_logo');
+                        $fileName = time() . '_' . $logo->getClientOriginalName();
+                        $ekspedisiLogoPath = $logo->storeAs('ekspedisi_logos', $fileName, 'public');
+                    }
+
+                    // Simpan ekspedisi baru ke database
+                    DB::table('ekspedisi')->insert([
+                        'nama_ekspedisi' => $namaEkspedisi,
+                        'ekspedisi_logo' => $ekspedisiLogoPath,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+
+            // Generate data transaksi
+            $lastTransaksi = DB::table('transaksi')
+                ->whereDate('created_at', today())
+                ->orderBy('nomor_urut', 'desc')
+                ->first();
+
+            $nomorUrut = $lastTransaksi ? $lastTransaksi->nomor_urut + 1 : 1;
             $kodeTransaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
 
+            // Get customer data
             $customer = DB::table('customer')->where('id', $request->customer)->first();
+            $depositTersedia = $customer ? $customer->deposit : 0;
 
-
-            $ekspedisi = $request->ekspedisi === 'Lainnya' ? $request->ekspedisi_lain : $request->ekspedisi;
-
-            if (!$customer) {
-                // Jika customer tidak ditemukan, lanjutkan dengan nilai default deposit 0
-                $depositTersedia = 0;
-            } else {
-                $depositTersedia = $customer->deposit;
-            }
-            $requestedDeposit = $request->used_deposit;
+            $requestedDeposit = $request->used_deposit ?? 0;
             $totalTransaksi = $request->total;
 
-            // Deposit yang benar-benar digunakan (tidak melebihi total transaksi atau deposit tersedia)
+            // Deposit yang benar-benar digunakan
             $usedDeposit = min($requestedDeposit, $totalTransaksi, $depositTersedia);
-
-            // Sisa deposit yang akan dikembalikan (jika deposit lebih besar dari total transaksi)
             $sisaDeposit = max(0, $requestedDeposit - $totalTransaksi);
             $remainingAmount = max(0, $totalTransaksi - $usedDeposit - $request->paid_amount);
+
             // Simpan data transaksi
             $transaksiId = DB::table('transaksi')->insertGetId([
                 'kode_transaksi' => $kodeTransaksi,
+                'nomor_urut' => $nomorUrut,
                 'id_customer' => $request->customer,
-                'ekspedisi' => $ekspedisi,
-                'nama_customer' => DB::table('customer')->where('id', $request->customer)->value('nama'),
-                'no_hp_customer' => DB::table('customer')->where('id', $request->customer)->value('no_hp'),
-                'alamat_customer' => DB::table('customer')->where('id', $request->customer)->value('alamat'),
+                'ekspedisi' => $namaEkspedisi, // Menggunakan nama ekspedisi yang sudah diproses
+                'nama_customer' => $customer ? $customer->nama : null,
+                'no_hp_customer' => $customer ? $customer->no_hp : null,
+                'alamat_customer' => $customer ? $customer->alamat : null,
                 'payment_method' => $request->payment_method,
                 'payment_status' => $request->payment_status,
+                'channel_order' => $request->channel_order,
                 'subtotal' => $request->subtotal,
                 'discount' => $request->diskon_persen ?? 0,
                 'potongan' => $request->potongan ?? 0,
@@ -162,6 +284,9 @@ class TransaksiPenjualanController extends Controller
                 'nama_penerima' => $request->nama_penerima,
                 'telepon_penerima' => $request->telepon_penerima,
                 'alamat_penerima' => $request->alamat_penerima,
+                'ongkir' => $request->ongkir ?? 0,
+                'packing_kayu' => $request->packing_kayu ?? 0,
+
             ]);
 
             // Simpan item transaksi
@@ -184,14 +309,14 @@ class TransaksiPenjualanController extends Controller
                     ->decrement('stok', $item['quantity']);
             }
 
-            if ($requestedDeposit > 0) {
-                // Hitung total perubahan deposit (deposit digunakan dikurangi sisa yang dikembalikan)
+            // Update deposit customer jika diperlukan
+            if ($requestedDeposit > 0 && $customer) {
                 $totalDepositChange = $usedDeposit - $sisaDeposit;
-
-                // Update deposit customer
-                DB::table('customer')
-                    ->where('id', $request->customer)
-                    ->decrement('deposit', $totalDepositChange);
+                if ($totalDepositChange > 0) {
+                    DB::table('customer')
+                        ->where('id', $request->customer)
+                        ->decrement('deposit', $totalDepositChange);
+                }
             }
 
             DB::commit();
@@ -286,5 +411,11 @@ class TransaksiPenjualanController extends Controller
                 'message' => 'Gagal menyimpan customer: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function getEkspedisi()
+    {
+        $ekspedisi = DB::table('ekspedisi')->select('id', 'nama_ekspedisi')->get();
+        return response()->json($ekspedisi);
     }
 }

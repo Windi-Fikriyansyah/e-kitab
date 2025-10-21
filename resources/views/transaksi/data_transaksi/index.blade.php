@@ -132,6 +132,32 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Print Option Modal -->
+    <div class="modal fade" id="printOptionModal" tabindex="-1" aria-labelledby="printOptionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printOptionModalLabel">Pilih Jenis Cetakan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" id="printInvoiceOption" class="btn btn-info">
+                            <i class="fas fa-file-invoice"></i> Cetak Invoice
+                        </a>
+                        <a href="#" id="printDeliveryNoteOption" class="btn btn-primary">
+                            <i class="fas fa-truck"></i> Cetak Surat Jalan
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('css')
@@ -159,6 +185,50 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        $(document).on('click', '.print-btn', function(e) {
+            e.preventDefault();
+            var transactionId = $(this).data('id');
+
+            // Set the URLs for both print options
+            $('#printInvoiceOption').attr('href', "{{ route('transaksi.data_transaksi.cetak_invoice', '') }}/" +
+                transactionId);
+            $('#printDeliveryNoteOption').attr('href',
+                "{{ route('transaksi.data_transaksi.cetak_surat_jalan', '') }}/" + transactionId);
+
+            // Show the print option modal
+            $('#printOptionModal').modal('show');
+        });
+
+        // Tambahkan event handler untuk print options
+        $(document).on('click', '#printInvoiceOption, #printDeliveryNoteOption', function(e) {
+            e.preventDefault();
+            var url = $(this).attr('href');
+
+            // Open in new window/tab for printing
+            window.open(url, '_blank');
+
+            // Close modal
+            $('#printOptionModal').modal('hide');
+        });
+
+        // Tambahkan function untuk print langsung dari detail modal
+        $(document).on('click', '#printInvoiceBtn', function(e) {
+            e.preventDefault();
+            var url = $(this).attr('href');
+            window.open(url, '_blank');
+        });
+
+        // Optional: Tambahkan shortcut keyboard untuk print
+        $(document).keydown(function(e) {
+            // Ctrl+P untuk print
+            if (e.ctrlKey && e.keyCode == 80) {
+                e.preventDefault();
+                if ($('#printOptionModal').hasClass('show')) {
+                    $('#printDeliveryNoteOption')[0].click();
+                }
+            }
+        });
+
         $(document).ready(function() {
             $.ajaxSetup({
                 headers: {

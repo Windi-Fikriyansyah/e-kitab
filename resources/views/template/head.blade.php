@@ -39,7 +39,7 @@
     <link rel="stylesheet"
         href="{{ asset('template/assets/extensions/@fortawesome/fontawesome-free/css/all.min.css') }}">
 
-
+    @stack('style')
     <style>
         #produk td {
             white-space: nowrap;

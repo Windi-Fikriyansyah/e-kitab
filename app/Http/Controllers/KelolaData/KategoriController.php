@@ -45,6 +45,98 @@ class KategoriController extends Controller
         ]);
     }
 
+    public function get_penulis()
+    {
+        // Get all categories
+        $penuliss = DB::table('penulis')->get();
+
+        $result = [];
+        foreach ($penuliss as $kategori) {
+
+            $penulisData = [
+                'id' => $kategori->id,
+                'nama' => $kategori->nama_indonesia,
+                'nama_arab' => $kategori->nama_arab,
+            ];
+
+            $result[] = $penulisData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
+    public function get_penerbit()
+    {
+        // Get all categories
+        $penerbits = DB::table('penerbit')->get();
+
+        $result = [];
+        foreach ($penerbits as $kategori) {
+
+            $penerbitData = [
+                'id' => $kategori->id,
+                'nama' => $kategori->nama_indonesia,
+                'nama_arab' => $kategori->nama_arab,
+            ];
+
+            $result[] = $penerbitData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
+    public function get_harokat()
+    {
+        // Get all categories
+        $harakats = DB::table('harakat')->get();
+
+        $result = [];
+        foreach ($harakats as $kategori) {
+
+            $harakatData = [
+                'id' => $kategori->id,
+                'nama' => $kategori->nama_indonesia,
+                'nama_arab' => $kategori->nama_arab,
+            ];
+
+            $result[] = $harakatData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
+    public function get_cover()
+    {
+        // Get all categories
+        $covers = DB::table('cover')->get();
+
+        $result = [];
+        foreach ($covers as $kategori) {
+
+            $coverData = [
+                'id' => $kategori->id,
+                'nama' => $kategori->nama_indonesia,
+                'nama_arab' => $kategori->nama_arab,
+            ];
+
+            $result[] = $coverData;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
+    }
+
     public function get_api_show($id)
     {
         // Get the category
