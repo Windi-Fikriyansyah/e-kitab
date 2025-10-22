@@ -354,12 +354,14 @@
                     }, {
                         data: 'harga_modal',
                         render: function(data) {
+                            if (!data) return '-';
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
                     }, {
                         data: 'harga_jual',
                         visible: false,
                         render: function(data) {
+                            if (!data) return '-';
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
                     },
