@@ -3,7 +3,7 @@
 @section('content')
     <div class="page-heading">
         <div class="d-flex justify-content-between">
-            <h3>Riwayat Produk ({{ $produk->kd_produk }} - {{ $produk->judul }})</h3>
+            <h3>Riwayat Produk ({{ $produk->judul }} - {{ $produk->penerbit }} - {{ $produk->nama_supplier }})</h3>
             <a href="{{ route('kelola_data.produk.index') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>

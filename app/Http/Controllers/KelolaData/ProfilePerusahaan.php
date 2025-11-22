@@ -107,12 +107,39 @@ class ProfilePerusahaan extends Controller
             'shoope.max' => 'Shopee maksimal 255 karakter',
         ]);
 
-        $data = $request->except('_token', 'logo');
+        $data = $request->except(
+            '_token',
+            'logo',
+            'logo_bank',
+            'nama_bank',
+            'nama_pemilik',
+            'no_rek'
+        );
 
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('profile_logos', 'public');
         }
 
+        $banks = [];
+        if ($request->nama_bank) {
+            foreach ($request->nama_bank as $i => $bankName) {
+
+                $logoPath = null;
+
+                if ($request->hasFile('logo_bank.' . $i)) {
+                    $logoPath = $request->file('logo_bank.' . $i)->store('bank_logo', 'public');
+                }
+
+                $banks[] = [
+                    'logo_bank'    => $logoPath,
+                    'nama_bank'    => $request->nama_bank[$i],
+                    'nama_pemilik' => $request->nama_pemilik[$i],
+                    'no_rek'       => $request->no_rek[$i],
+                ];
+            }
+        }
+
+        $data['banks'] = json_encode($banks);
         DB::table('profile_perusahaan')->insert($data);
 
         return redirect()->route('kelola_data.profile_perusahaan.index')
@@ -164,7 +191,16 @@ class ProfilePerusahaan extends Controller
             'shoope.max' => 'Shopee maksimal 255 karakter',
         ]);
 
-        $data = $request->except('_token', '_method', 'logo');
+        $data = $request->except(
+            '_token',
+            '_method',
+            'logo',
+            'logo_bank',
+            'old_logo_bank',   // ← WAJIB DITAMBAHKAN
+            'nama_bank',
+            'nama_pemilik',
+            'no_rek'
+        );
         $profile = DB::table('profile_perusahaan')->find($decryptedId);
 
         if ($request->hasFile('logo')) {
@@ -175,6 +211,27 @@ class ProfilePerusahaan extends Controller
             $data['logo'] = $request->file('logo')->store('profile_logos', 'public');
         }
 
+
+        $banks = [];
+
+        foreach ($request->nama_bank as $i => $bankName) {
+
+            // gunakan logo lama bila tidak upload baru
+            $logoPath = $request->old_logo_bank[$i] ?? null;
+
+            if ($request->hasFile('logo_bank.' . $i)) {
+                $logoPath = $request->file('logo_bank.' . $i)->store('bank_logo', 'public');
+            }
+
+            $banks[] = [
+                'logo_bank'    => $logoPath,
+                'nama_bank'    => $request->nama_bank[$i],
+                'nama_pemilik' => $request->nama_pemilik[$i],
+                'no_rek'       => $request->no_rek[$i],
+            ];
+        }
+
+        $data['banks'] = json_encode($banks);
         DB::table('profile_perusahaan')
             ->where('id', $decryptedId)
             ->update($data);

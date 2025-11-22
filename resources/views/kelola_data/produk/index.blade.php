@@ -77,6 +77,16 @@
                         <h5 class="card-title">Data Produk</h5>
                     </div>
                     <div class="dropdown ms-auto">
+                        <!-- Export PDF -->
+                        {{-- <a id="exportPdfBtn" class="btn btn-danger me-2">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a> --}}
+
+                        <!-- Export Excel -->
+                        <a id="exportExcelBtn" class="btn btn-success me-2">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </a>
+
                         <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#addColumnModal">
                             <i class="fas fa-plus"></i> Tambah Kolom
                         </button>
@@ -136,19 +146,45 @@
                     </div>
                 </div>
                 <div class="table-responsive">
+                    <div class="row mb-3 g-2">
+
+                        <!-- Card Total Stok -->
+                        <div class="col-md-2 col-6">
+                            <div class="card shadow-sm border-0" style="background:#ffffff;">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-1 text-muted" style="font-size:12px;">Total Stok</h6>
+                                    <h5 id="totalStok" class="fw-bold text-dark m-0" style="font-size:18px;"></h5>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Total Harga Jual (lebih lebar) -->
+                        <div class="col-md-3 col-6">
+                            <div class="card shadow-sm border-0" style="background:#ffffff;">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-1 text-muted" style="font-size:12px;">Total Harga Jual</h6>
+                                    <h5 id="totalHarga" class="fw-bold text-dark m-0" style="font-size:18px;"></h5>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+
                     <table class="table align-middle mb-0" id="produk" style="width: 100%">
                         <thead>
                             <tr>
                                 <th>Gambar</th>
-                                <th>Kd Produk</th>
+                                <th style="display:none;">Kd Produk</th>
                                 <th>Judul</th>
                                 <th style="display:none;">Penulis</th>
                                 <th style="display:none;">Kategori</th>
-                                <th style="display:none;">Penerbit</th>
+                                <th>Penerbit</th>
                                 <th style="display:none;">Supplier</th>
+                                <th style="display:none;">Harga Modal</th>
+                                <th>Harga Jual</th>
                                 <th>Stok</th>
-                                <th>Harga Modal</th>
-                                <th style="display:none;">Harga Jual</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -198,6 +234,32 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
+        // Ketika klik export PDF
+        $('#exportPdfBtn').click(function() {
+            let params = collectFilters();
+            window.open("{{ route('kelola_data.produk.exportPdf') }}?" + params, "_blank");
+        });
+
+        // Ketika klik export Excel
+        $('#exportExcelBtn').click(function() {
+            let params = collectFilters();
+            window.location.href = "{{ route('kelola_data.produk.exportExcel') }}?" + params;
+        });
+
+        // Fungsi untuk mengambil seluruh filter
+        function collectFilters() {
+            let params = [];
+
+            $('.filter-input, .filter-select').each(function() {
+                if ($(this).val() !== "") {
+                    params.push($(this).data("column") + "=" + encodeURIComponent($(this).val()));
+                }
+            });
+
+            return params.join("&");
+        }
+
+
         window.printBarcode = function() {
             // Clone the barcode container for printing
             const printContent = document.getElementById('barcodeContainer').cloneNode(true);
@@ -334,6 +396,7 @@
                         searchable: false
                     }, {
                         data: 'kd_produk',
+                        visible: false,
                     }, {
                         data: 'judul',
                     }, {
@@ -344,32 +407,41 @@
                         visible: false
                     }, {
                         data: 'penerbit',
-                        visible: false
                     }, {
                         data: 'supplier',
                         visible: false
-                    },
-                    {
-                        data: 'stok',
                     }, {
                         data: 'harga_modal',
+                        visible: false,
                         render: function(data) {
                             if (!data) return '-';
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
                     }, {
                         data: 'harga_jual',
-                        visible: false,
                         render: function(data) {
                             if (!data) return '-';
                             return data.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
                         }
                     },
                     {
+                        data: 'stok',
+                    },
+                    {
                         data: 'aksi',
-                        className: 'text-center text-nowrap'
+                        className: 'text-center text-nowrap',
+                        width: "180px"
                     }
                 ],
+                drawCallback: function(settings) {
+                    let api = this.api();
+
+                    let totalStok = settings.json.total_stok ?? 0;
+                    let totalHarga = settings.json.total_harga ?? 0;
+
+                    $('#totalStok').text(totalStok.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                    $('#totalHarga').text(totalHarga.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."));
+                },
                 columnDefs: [{
                         className: "dt-head-center",
                         targets: ['_all']

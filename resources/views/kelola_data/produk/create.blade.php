@@ -51,13 +51,18 @@
                             <div class="form-group">
                                 <label for="kategori">Kategori (Arab)</label>
                                 <div class="input-group">
-                                    <select class="form-select @error('kategori') is-invalid @enderror" name="kategori"
-                                        dir="rtl" id="kategori" style="width: 100%">
-                                        @if (isset($produk) && $produk->kategori)
-                                            <option value="{{ $produk->kategori }}" selected>
-                                                {{ $produk->kategori }}
-                                            </option>
+                                    <select class="form-select" name="kategori[]" id="kategori" multiple>
+
+                                        @if (isset($kategori))
+                                            @foreach ($kategori as $k)
+                                                <option value="{{ $k->nama_arab }}" data-nama_arab="{{ $k->nama_arab }}"
+                                                    data-nama_indonesia="{{ $k->nama_indonesia }}" selected>
+                                                    {{ $k->text }}
+                                                </option>
+                                            @endforeach
                                         @endif
+
+
                                     </select>
                                     <button type="button" class="btn btn-success" onclick="bukaModalTambah('kategori')">
                                         <i class="fas fa-plus"></i>
@@ -67,18 +72,25 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                            <div id="selected_kategori" class="mt-2"></div>
+
 
 
                             <div class="form-group">
                                 <label for="sub_kategori">Sub Kategori (Arab)</label>
                                 <div class="input-group">
-                                    <select class="form-select @error('sub_kategori') is-invalid @enderror"
-                                        name="sub_kategori" dir="rtl" id="sub_kategori" style="width: 100%">
-                                        @if (isset($produk) && $produk->sub_kategori)
-                                            <option value="{{ $produk->sub_kategori }}" selected>
-                                                {{ $produk->sub_kategori }}
-                                            </option>
+                                    <select class="form-select" name="sub_kategori[]" id="sub_kategori" multiple>
+
+                                        @if (isset($subKategori))
+                                            @foreach ($subKategori as $s)
+                                                <option value="{{ $s->id }}" data-nama_arab="{{ $s->nama_arab }}"
+                                                    data-nama_indonesia="{{ $s->nama_indonesia }}" selected>
+                                                    {{ $s->text }}
+                                                </option>
+                                            @endforeach
                                         @endif
+
+
                                     </select>
                                     <button type="button" class="btn btn-success"
                                         onclick="bukaModalTambah('sub_kategori')">
@@ -89,6 +101,8 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                            <div id="selected_sub_kategori" class="mt-2"></div>
+
 
                             <div class="form-group">
                                 <label for="penerbit">Penerbit (Arab)</label>
@@ -561,6 +575,46 @@
 @push('style')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <style>
+        /* Perkecil tulisan di item yang sudah dipilih */
+        .select2-selection__choice {
+            font-size: 11px !important;
+            padding: 2px 6px !important;
+            margin: 2px 4px 2px 0 !important;
+            white-space: normal !important;
+            line-height: 1.2 !important;
+        }
+
+        /* Perkecil tinggi box Select2 */
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 38px !important;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+        }
+
+        /* Perkecil dropdown list */
+        .select2-results__option {
+            font-size: 12px !important;
+            padding: 4px 8px !important;
+        }
+
+        /* Rapikan item Arab (RTL) */
+        .select2-container .select2-selection__choice__display {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+
+        .select2-selection__choice {
+            display: none !important;
+        }
+
+        /* Wadah pilihan lebih rapat dan tidak melebar */
+        .select2-selection__rendered {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 2px !important;
+            padding: 2px 4px !important;
+        }
+
         .select2-container {
             flex: 1 !important;
         }
@@ -718,6 +772,9 @@
 
 
         $(document).ready(function() {
+
+
+
             const select2Fields = ['kategori', 'sub_kategori', 'penerbit', 'cover', 'kertas', 'kualitas',
                 'harakat',
                 'penulis', 'supplier', 'ukuran'
@@ -796,6 +853,25 @@
     </script>
     <script>
         $(document).ready(function() {
+            @if (isset($kategori))
+                renderSelected('selected_kategori', @json($kategori));
+
+                // Isi input Indonesia
+                $("#kategori_indonesia").val(
+                    @json($kategori).map(i => i.nama_indonesia).join(', ')
+                );
+            @endif
+
+
+            @if (isset($subKategori))
+                renderSelected('selected_sub_kategori', @json($subKategori));
+
+                $("#sub_kategori_indonesia").val(
+                    @json($subKategori).map(i => i.nama_indonesia).join(', ')
+                );
+            @endif
+
+
             // Inisialisasi Select2 dengan tema Bootstrap 5
             $('.select2').select2({
                 placeholder: 'Pilih opsi',
@@ -862,133 +938,150 @@
             $('#kategori').select2({
                 theme: "bootstrap-5",
                 width: "100%",
-                placeholder: "Silahkan Pilih Kategori",
-                minimumInputLength: 0,
-                dropdownParent: $('.card-body'),
+                placeholder: "Pilih kategori",
+                multiple: true,
                 ajax: {
                     url: "{{ route('kelola_data.produk.getkategori') }}",
                     dataType: 'json',
                     type: "POST",
                     delay: 250,
-                    data: function(params) {
-                        return {
-                            q: $.trim(params.term),
-                            _token: "{{ csrf_token() }}"
-                        };
-                    },
-                    processResults: function(data) {
-                        return {
-                            results: $.map(data, function(item) {
-                                return {
-                                    id: item.nama_arab,
-                                    text: item.text,
-                                    nama_arab: item.nama_arab,
-                                    nama_indonesia: item.nama_indonesia
-                                }
-                            })
-                        };
-                    },
-                    cache: true
+                    data: params => ({
+                        q: $.trim(params.term),
+                        _token: "{{ csrf_token() }}"
+                    }),
+                    processResults: data => ({
+                        results: $.map(data, item => ({
+                            id: item.id,
+                            text: item.text,
+                            nama_arab: item.nama_arab,
+                            nama_indonesia: item.nama_indonesia
+                        }))
+                    })
                 },
                 templateResult: function(data) {
-                    if (data.loading) {
-                        return data.text;
-                    }
-                    var $result = $(
-                        '<div style="text-align: right; direction: rtl;">' +
-                        data.nama_arab + ' | ' +
-                        '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
-                        '</span>' +
-                        '</div>'
-                    );
-                    return $result;
+                    if (data.loading) return data.text;
+                    return `<div style="direction: rtl;text-align:right">${data.nama_arab} | <span style="color:#777">${data.nama_indonesia}</span></div>`;
                 },
-                templateSelection: function(data) {
-                    if (data.id === '') {
-                        return data.text;
-                    }
-                    if (data.nama_arab) {
-                        return data.nama_arab;
-                    }
-                    return data.id;
+                escapeMarkup: m => m
+            });
+
+
+            function renderSelected(containerId, dataList, selectId) {
+                let html = '';
+
+                dataList.forEach(item => {
+                    html += `
+            <span class="badge bg-primary d-inline-flex align-items-center me-1 mb-1"
+                  style="font-size:12px; padding:4px 6px; border-radius:6px;">
+
+                <span style="margin-right:6px;">
+                    ${item.nama_arab}
+                    <span style="color:#ddd"> | </span>
+                    ${item.nama_indonesia}
+                </span>
+
+                <span class="remove-chip"
+                      data-id="${item.id}"
+                      data-select="${selectId}"
+                      style="cursor:pointer; font-weight:bold; margin-left:2px;">
+                      ×
+                </span>
+            </span>
+        `;
+                });
+
+                $("#" + containerId).html(html);
+            }
+
+
+
+
+            // KATEGORI
+            $('#kategori').on('change', function() {
+                let list = $('#kategori').select2('data');
+
+                $("#kategori_indonesia").val(list.map(i => i.nama_indonesia).join(', '));
+
+                renderSelected('selected_kategori', list, 'kategori');
+            });
+
+
+
+            $('#sub_kategori').on('change', function() {
+                let list = $('#sub_kategori').select2('data');
+
+                $("#sub_kategori_indonesia").val(list.map(i => i.nama_indonesia).join(', '));
+
+                renderSelected('selected_sub_kategori', list, 'sub_kategori');
+            });
+
+
+            let kategoriAwal = @json($kategori ? array_column($kategori, 'nama_arab') : []);
+            $('#kategori').on('change', function() {
+
+                let selectedKategori = $(this).val();
+                if (JSON.stringify(selectedKategori) === JSON.stringify(kategoriAwal)) {
+                    return; // JANGAN RESET sub kategori
                 }
+
+                updateKategoriIndonesia();
+
+
+
+                // 🔥 Jika tidak ada kategori → tidak load sub kategori
+                if (!selectedKategori || selectedKategori.length === 0) {
+                    return;
+                }
+
+                loadSubKategori(selectedKategori); // load ulang sesuai kategori terbaru
             });
 
-            // Update the kategori selection handler
-            $('#kategori').on('select2:select', function(e) {
-                var data = e.params.data;
-                $('#kategori_indonesia').val(data.nama_indonesia);
-                $('#sub_kategori').val(null).trigger('change');
-                $('#sub_kategori_indonesia').val('');
 
-                // Load sub kategori berdasarkan kategori yang dipilih
-                loadSubKategori(data.id);
-            });
+            function updateKategoriIndonesia() {
+                let texts = $('#kategori').select2('data').map(i => i.nama_indonesia);
+                $('#kategori_indonesia').val(texts.join(', '));
+            }
 
-            function loadSubKategori(kategoriNamaArab) {
+
+            function loadSubKategori(kategoriArray) {
+
+                // Reset Select2 dengan benar
+                $('#sub_kategori').select2('destroy');
+                $('#sub_kategori').empty();
 
                 $('#sub_kategori').select2({
                     theme: "bootstrap-5",
                     width: "100%",
-                    placeholder: "Silahkan Pilih Sub Kategori",
-                    minimumInputLength: 0,
-                    dropdownParent: $('body'),
+                    placeholder: "Pilih sub kategori",
+                    multiple: true,
                     ajax: {
                         url: "{{ route('kelola_data.produk.getsubkategori') }}",
                         dataType: 'json',
                         type: "POST",
                         delay: 250,
-                        data: function(params) {
-                            return {
-                                q: $.trim(params.term),
-                                kategori: kategoriNamaArab,
-                                _token: "{{ csrf_token() }}"
-                            };
-                        },
-                        processResults: function(data) {
-                            return {
-                                results: $.map(data, function(item) {
-                                    return {
-                                        id: item.nama_arab,
-                                        text: item.text,
-                                        nama_arab: item.nama_arab,
-                                        nama_indonesia: item.nama_indonesia
-                                    }
-                                })
-                            };
-                        },
-                        cache: true
+                        data: params => ({
+                            q: params.term,
+                            kategori: kategoriArray,
+                            _token: "{{ csrf_token() }}"
+                        }),
+                        processResults: data => ({
+                            results: $.map(data, item => ({
+                                id: item.id,
+                                text: item.nama_arab + ' | ' + item.nama_indonesia,
+                                nama_arab: item.nama_arab,
+                                nama_indonesia: item.nama_indonesia
+                            }))
+                        })
                     },
-                    templateResult: function(data) {
-                        if (data.loading) {
-                            return data.text;
-                        }
-                        var $result = $(
-                            '<div style="text-align: right; direction: rtl;">' +
-                            data.nama_arab + ' | ' +
-                            '<span style="color: #999; margin-right: 5px;">' + data.nama_indonesia +
-                            '</span>' +
-                            '</div>'
-                        );
-                        return $result;
+                    templateResult: d => {
+                        if (d.loading) return d.text;
+                        return `<div style="direction: rtl;text-align:right">${d.nama_arab} | <span style="color:#777">${d.nama_indonesia}</span></div>`;
                     },
-                    templateSelection: function(data) {
-                        if (data.id === '') {
-                            return data.text;
-                        }
-                        if (data.nama_arab) {
-                            return data.nama_arab;
-                        }
-                        return data.id;
-                    }
+                    escapeMarkup: m => m
                 });
 
-                // Event ketika sub kategori dipilih
-                $('#sub_kategori').on('select2:select', function(e) {
-                    var data = e.params.data;
-                    $('#sub_kategori_indonesia').val(data.nama_indonesia);
-                });
             }
+
 
 
             $('#penerbit').select2({
@@ -1051,16 +1144,10 @@
             $('#sub_kategori').select2({
                 theme: "bootstrap-5",
                 width: "100%",
-                placeholder: "Pilih kategori terlebih dahulu",
-                minimumInputLength: 0,
-                dropdownParent: $('body'),
-                data: [] // Start with empty data
+                placeholder: "Pilih sub kategori",
             });
 
-            $('#sub_kategori').on('select2:select', function(e) {
-                var data = e.params.data;
-                $('#sub_kategori_indonesia').val(data.nama_indonesia);
-            });
+
 
             // Update the kategori selection handler
             $('#penerbit').on('select2:select', function(e) {
@@ -1440,21 +1527,10 @@
 
             });
 
-            @if (isset($produk) && $produk->kategori && $produk->sub_kategori)
-                // Load sub kategori saat edit
-                loadSubKategori("{{ $produk->kategori }}");
-
-                // Set nilai sub kategori yang sudah ada
-                setTimeout(function() {
-                    var subKategoriOption = new Option("{{ $produk->sub_kategori }}",
-                        "{{ $produk->sub_kategori }}", true, true);
-                    $('#sub_kategori').append(subKategoriOption).trigger('change');
-                    $('#sub_kategori_indonesia').val("{{ $produk->sub_kategori_indo }}");
-                }, 500);
-            @endif
 
             @if (isset($produk) && $produk->penerbit)
-                var penerbitOption = new Option("{{ $produk->penerbit }}", "{{ $produk->penerbit }}", true, true);
+                var penerbitOption = new Option("{{ $produk->penerbit }}", "{{ $produk->penerbit }}", true,
+                    true);
                 $('#penerbit').append(penerbitOption).trigger('change');
             @endif
 
@@ -1469,7 +1545,8 @@
             @endif
 
             @if (isset($produk) && $produk->kualitas)
-                var kualitasOption = new Option("{{ $produk->kualitas }}", "{{ $produk->kualitas }}", true, true);
+                var kualitasOption = new Option("{{ $produk->kualitas }}", "{{ $produk->kualitas }}", true,
+                    true);
                 $('#kualitas').append(kualitasOption).trigger('change');
             @endif
 
@@ -1483,6 +1560,16 @@
                 $('#penulis').append(penulisOption).trigger('change');
             @endif
 
+        });
+
+        $(document).on('click', '.remove-chip', function() {
+            let id = $(this).data('id');
+            let select = $(this).data('select');
+
+            let selected = $('#' + select).val() || [];
+            selected = selected.filter(val => val != id);
+
+            $('#' + select).val(selected).trigger('change');
         });
     </script>
 @endpush

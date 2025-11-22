@@ -143,6 +143,52 @@
                         </div>
                     </div>
 
+                    <h5 class="mt-4 mb-3">Informasi Rekening Bank</h5>
+
+                    <div id="bankContainer">
+
+                        @if (isset($profile) && $profile->banks)
+                            @foreach (json_decode($profile->banks) as $idx => $bank)
+                                <div class="bank-item border p-3 rounded mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label>Logo Bank</label>
+                                            <input type="file" name="logo_bank[]" class="form-control">
+                                            <input type="hidden" name="old_logo_bank[]" value="{{ $bank->logo_bank }}">
+                                            <img src="{{ asset('storage/' . $bank->logo_bank) }}" width="80"
+                                                class="mt-2">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Nama Bank</label>
+                                            <input type="text" name="nama_bank[]" class="form-control"
+                                                value="{{ $bank->nama_bank }}" required>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Nama Pemilik</label>
+                                            <input type="text" name="nama_pemilik[]" class="form-control"
+                                                value="{{ $bank->nama_pemilik }}" required>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>No Rekening</label>
+                                            <input type="text" name="no_rek[]" class="form-control"
+                                                value="{{ $bank->no_rek }}" required>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-danger mt-2 remove-bank">Hapus</button>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+
+                    <button type="button" id="addBank" class="btn btn-success mt-2">
+                        + Tambah Rekening Bank
+                    </button>
+
+
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{{ route('kelola_data.profile_perusahaan.index') }}" class="btn btn-secondary">
                             <i class="bx bx-arrow-back"></i> Kembali
@@ -158,6 +204,48 @@
 @endsection
 
 @push('js')
+    <script>
+        $(document).ready(function() {
+
+            $("#addBank").click(function() {
+                let html = `
+        <div class="bank-item border p-3 rounded mb-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <label>Logo Bank</label>
+                    <input type="file" name="logo_bank[]" class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label>Nama Bank</label>
+                    <input type="text" name="nama_bank[]" class="form-control" required>
+                </div>
+
+                <div class="col-md-3">
+                    <label>Nama Pemilik</label>
+                    <input type="text" name="nama_pemilik[]" class="form-control" required>
+                </div>
+
+                <div class="col-md-3">
+                    <label>No Rekening</label>
+                    <input type="text" name="no_rek[]" class="form-control" required>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-danger mt-2 remove-bank">Hapus</button>
+        </div>
+        `;
+
+                $("#bankContainer").append(html);
+            });
+
+            $(document).on("click", ".remove-bank", function() {
+                $(this).closest(".bank-item").remove();
+            });
+
+        });
+    </script>
+
     <script>
         $(document).ready(function() {
             // Format WhatsApp number input

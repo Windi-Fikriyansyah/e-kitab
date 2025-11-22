@@ -145,10 +145,10 @@
                 <div class="modal-body">
                     <div class="d-grid gap-2">
                         <a href="#" id="printInvoiceOption" class="btn btn-info">
-                            <i class="fas fa-file-invoice"></i> Cetak Invoice
+                            <i class="fas fa-file-invoice"></i> Cetak Surat Jalan
                         </a>
                         <a href="#" id="printDeliveryNoteOption" class="btn btn-primary">
-                            <i class="fas fa-truck"></i> Cetak Surat Jalan
+                            <i class="fas fa-truck"></i> Cetak Invoice
                         </a>
                     </div>
                 </div>
