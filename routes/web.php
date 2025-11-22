@@ -288,11 +288,11 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/getsubkategori', [ProdukController::class, 'getSubKategori'])->name('getsubkategori');
 
                 Route::post('/tambah-data', [ProdukController::class, 'tambahData'])->name('tambahData');
-                Route::get('/export/pdf', [ProdukController::class, 'exportProdukPdf'])
-                    ->name('exportPdf');
+                // Route::get('/export/pdf-produk', [ProdukController::class, 'exportProdukPdf'])
+                //     ->name('exportPdf');
 
                 Route::get('/export/excel', [ProdukController::class, 'exportProdukExcel'])
-                    ->name('exportExcel');
+                    ->name('exportExcelProduk');
                 Route::post('/getkategoriByName', [ProdukController::class, 'getKategoriByName'])
                     ->name('getkategoriByName');
             });

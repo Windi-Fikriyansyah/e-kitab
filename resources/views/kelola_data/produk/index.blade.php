@@ -243,7 +243,7 @@
         // Ketika klik export Excel
         $('#exportExcelBtn').click(function() {
             let params = collectFilters();
-            window.location.href = "{{ route('kelola_data.produk.exportExcel') }}?" + params;
+            window.location.href = "{{ route('kelola_data.produk.exportExcelProduk') }}?" + params;
         });
 
         // Fungsi untuk mengambil seluruh filter
