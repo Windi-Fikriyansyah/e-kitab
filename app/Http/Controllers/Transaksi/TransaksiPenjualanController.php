@@ -18,7 +18,8 @@ class TransaksiPenjualanController extends Controller
     public function load(Request $request)
     {
         $query = DB::table('produk')
-            ->join('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->leftJoin('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->where('produk.stok', '>', 0)
             ->select([
                 'produk.id',
                 'produk.kd_produk',
@@ -31,8 +32,19 @@ class TransaksiPenjualanController extends Controller
                 'produk.harga_jual'
             ]);
 
+
         return DataTables::of($query)
             ->addIndexColumn()
+            ->editColumn('kategori', function ($row) {
+                // Convert JSON array → string
+                if ($row->kategori) {
+                    $kategoriArray = json_decode($row->kategori, true);
+                    if (is_array($kategoriArray)) {
+                        return implode(', ', $kategoriArray);
+                    }
+                }
+                return '-';
+            })
             ->addColumn('aksi', function ($row) {
                 return '';
             })

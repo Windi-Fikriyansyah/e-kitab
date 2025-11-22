@@ -147,6 +147,92 @@ class ProdukController extends Controller
         }
     }
 
+    private function filterProdukQuery($request)
+    {
+        $query = DB::table('produk')
+            ->leftJoin('supplier', 'produk.supplier', '=', 'supplier.id')
+            ->select([
+                'produk.id',
+                'produk.kd_produk',
+                'produk.judul',
+                'produk.cover',
+                'produk.kertas',
+                'produk.kualitas',
+                'produk.harakat',
+                'produk.halaman',
+                'produk.berat',
+                'produk.ukuran',
+                'produk.kategori',
+                'produk.sub_kategori',
+                'produk.penerbit',
+                'produk.penulis',
+                DB::raw('COALESCE(supplier.nama_supplier, "Tidak ada supplier") AS supplier'),
+                'produk.harga_modal',
+                'produk.harga_jual',
+                'produk.laba',
+                'produk.stok',
+                'produk.images',
+                'produk.link_youtube',
+                'produk.editor',
+                'produk.deskripsi',
+                'produk.created_at',
+                'produk.updated_at'
+            ]);
+
+        // Terapkan semua filter
+        if ($request->kd_produk) {
+            $query->where('produk.kd_produk', 'LIKE', "%{$request->kd_produk}%");
+        }
+        if ($request->judul) {
+            $query->where('produk.judul', 'LIKE', "%{$request->judul}%");
+        }
+        if ($request->penulis) {
+            $query->where('produk.penulis', $request->penulis);
+        }
+        if ($request->kategori) {
+            $query->where('produk.kategori', $request->kategori);
+        }
+        if ($request->sub_kategori) {
+            $query->where('produk.sub_kategori', $request->sub_kategori);
+        }
+        if ($request->penerbit) {
+            $query->where('produk.penerbit', $request->penerbit);
+        }
+        if ($request->supplier) {
+            $query->where('supplier.id', $request->supplier);
+        }
+        if ($request->stok) {
+            $query->where('produk.stok', 'LIKE', "%{$request->stok}%");
+        }
+
+        return $query->orderBy('produk.created_at', 'desc')->get();
+    }
+
+
+
+    public function exportProdukPdf(Request $request)
+    {
+        $produk = $this->filterProdukQuery($request);
+
+        $pdf = Pdf::loadView('exports.produk-pdf', compact('produk'))
+            ->setPaper('a3', 'landscape');
+
+        return $pdf->download('data-produk-' . date('Y-m-d') . '.pdf');
+    }
+
+
+
+    public function exportProdukExcel(Request $request)
+    {
+        $produk = $this->filterProdukQuery($request);
+
+        return Excel::download(
+            new \App\Exports\ProdukExport($produk),
+            'data-produk-' . date('Y-m-d') . '.xlsx'
+        );
+    }
+
+
     public function api_index(Request $request)
     {
         try {
@@ -384,7 +470,28 @@ class ProdukController extends Controller
             }
         }
 
+        $totalsQuery = clone $query;
+
+        // Reset select agar tidak bentrok dengan ONLY_FULL_GROUP_BY
+        $totalsQuery->select(DB::raw("
+    SUM(produk.stok) as total_stok,
+    SUM(produk.harga_jual * produk.stok) as total_harga
+"));
+
+        // Hapus order & limit yang dibawa clone dari datatables
+        $totalsQuery->orders = null;
+        $totalsQuery->limit = null;
+        $totalsQuery->offset = null;
+
+        // Ambil total
+        $totals = $totalsQuery->first();
+
+
         return DataTables::of($query)
+            ->with([
+                'total_stok' => $totals->total_stok ?? 0,
+                'total_harga' => $totals->total_harga ?? 0,
+            ])
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
                 $riwayatButton = '<a href="' . route('kelola_data.produk.riwayat', Crypt::encrypt($row->id)) . '"
@@ -535,7 +642,11 @@ class ProdukController extends Controller
 
     public function create()
     {
-        return view('kelola_data.produk.create');
+        return view('kelola_data.produk.create', [
+            'produk' => null,
+            'kategori' => [],
+            'subKategori' => [],
+        ]);
     }
 
     public function store(Request $request)
@@ -624,8 +735,8 @@ class ProdukController extends Controller
             $produkData = [
                 'kd_produk' => $kd_produk,
                 'judul' => $request->judul_arab,
-                'kategori' => $request->kategori,
-                'sub_kategori' => $request->sub_kategori,
+                'kategori' => json_encode($request->kategori, JSON_UNESCAPED_UNICODE),
+                'sub_kategori' => json_encode($request->sub_kategori, JSON_UNESCAPED_UNICODE),
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -649,13 +760,16 @@ class ProdukController extends Controller
             // Tambahkan kolom dinamis ke data produk
             $dynamicColumns = DB::getSchemaBuilder()->getColumnListing('produk');
             foreach ($dynamicColumns as $column) {
-                if ($column === 'images') {
-                    continue; // Hindari menimpa nilai images yang sudah diproses
+                // Jangan timpa kategori & sub_kategori karena sudah di-json_encode
+                if (in_array($column, ['kategori', 'sub_kategori', 'kategori_indo', 'sub_kategori_indo', 'images'])) {
+                    continue;
                 }
+
                 if ($request->has($column)) {
                     $produkData[$column] = $request->$column;
                 }
             }
+
 
             // Simpan ke tabel produk
             $produkId = DB::table('produk')->insertGetId($produkData);
@@ -664,8 +778,8 @@ class ProdukController extends Controller
             $produkIndoData = [
                 'id_produk' => $produkId,
                 'judul_indo' => $request->judul_indonesia,
-                'kategori_indo' => $request->kategori_indonesia,
-                'sub_kategori_indo' => $request->sub_kategori_indonesia,
+                'kategori_indo' => json_encode(explode(',', $request->kategori_indonesia), JSON_UNESCAPED_UNICODE),
+                'sub_kategori_indo' => json_encode(explode(',', $request->sub_kategori_indonesia), JSON_UNESCAPED_UNICODE),
                 'penerbit_indo' => $request->penerbit_indonesia,
                 'cover_indo' => $request->cover_indonesia,
                 'kertas_indo' => $request->kertas_indonesia,
@@ -815,8 +929,8 @@ class ProdukController extends Controller
             // Siapkan data untuk update tabel produk
             $produkUpdateData = [
                 'judul' => $request->judul_arab,
-                'kategori' => $request->kategori,
-                'sub_kategori' => $request->sub_kategori,
+                'kategori' => json_encode($request->kategori, JSON_UNESCAPED_UNICODE),
+                'sub_kategori' => json_encode($request->sub_kategori, JSON_UNESCAPED_UNICODE),
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -839,8 +953,7 @@ class ProdukController extends Controller
             // Tambahkan kolom dinamis untuk tabel produk
             $dynamicColumns = DB::getSchemaBuilder()->getColumnListing('produk');
             foreach ($dynamicColumns as $column) {
-                // Skip kolom-kolom sistem dan yang sudah ada
-                if (in_array($column, ['id', 'kd_produk', 'created_at', 'updated_at', 'images'])) {
+                if (in_array($column, ['id', 'kd_produk', 'created_at', 'updated_at', 'images', 'kategori', 'sub_kategori'])) {
                     continue;
                 }
 
@@ -848,6 +961,7 @@ class ProdukController extends Controller
                     $produkUpdateData[$column] = $request->$column;
                 }
             }
+
 
             // Update tabel produk
             $affected = DB::table('produk')
@@ -857,14 +971,14 @@ class ProdukController extends Controller
             // Siapkan data untuk update tabel produk_indo
             $produkIndoUpdateData = [
                 'judul_indo' => $request->judul_indonesia,
-                'kategori_indo' => $request->kategori_indonesia,
+                'kategori_indo' => json_encode(explode(',', $request->kategori_indonesia), JSON_UNESCAPED_UNICODE),
+                'sub_kategori_indo' => json_encode(explode(',', $request->sub_kategori_indonesia), JSON_UNESCAPED_UNICODE),
                 'penerbit_indo' => $request->penerbit_indonesia,
                 'cover_indo' => $request->cover_indonesia,
                 'kertas_indo' => $request->kertas_indonesia,
                 'kualitas_indo' => $request->kualitas_indonesia,
                 'harakat_indo' => $request->harakat_indonesia,
                 'penulis_indo' => $request->penulis_indonesia,
-                'sub_kategori_indo' => $request->sub_kategori_indonesia,
             ];
 
             // Tambahkan kolom dinamis untuk tabel produk_indo
@@ -925,7 +1039,39 @@ class ProdukController extends Controller
             ->where('produk.id', $decryptedId)
             ->first();
 
-        return view('kelola_data.produk.create', compact('produk'));
+
+        $kategori = [];
+        if ($produk->kategori) {
+            foreach (json_decode($produk->kategori) as $item) {
+                $kategori[] = DB::table('kategori')
+                    ->where('nama_arab', $item)
+                    ->select(
+                        DB::raw("nama_arab AS id"),
+                        'nama_arab',
+                        'nama_indonesia',
+                        DB::raw("CONCAT(nama_arab,' | ',nama_indonesia) AS text")
+                    )
+                    ->first();
+            }
+        }
+
+        // Ambil data sub kategori lengkap
+        $subKategori = [];
+        if ($produk->sub_kategori) {
+            foreach (json_decode($produk->sub_kategori) as $item) {
+                $subKategori[] = DB::table('sub_kategori')
+                    ->where('nama_arab', $item)
+                    ->select(
+                        DB::raw("nama_arab AS id"),
+                        'nama_arab',
+                        'nama_indonesia',
+                        DB::raw("CONCAT(nama_arab,' | ',nama_indonesia) AS text")
+                    )
+                    ->first();
+            }
+        }
+
+        return view('kelola_data.produk.create', compact('produk', 'kategori', 'subKategori'));
     }
 
     public function riwayat($id)
@@ -939,6 +1085,7 @@ class ProdukController extends Controller
                 'produk.*',
                 'produk.id as id_produk_asli',
                 'produk_indo.*',
+                'supplier.nama_supplier',
                 DB::raw('COALESCE(supplier.nama_supplier, "Tidak ada supplier") as nama_supplier'),
                 DB::raw('COALESCE(supplier.telepon, "-") as telepon')
             )
@@ -1215,18 +1362,19 @@ class ProdukController extends Controller
     public function getSubKategori(Request $request)
     {
         $term = $request->q;
-        $kategori = $request->kategori;
+        $kategoriList = (array) $request->kategori;
+
 
         $query = DB::table('sub_kategori');
 
-        if ($kategori) {
-            // Cari kategori berdasarkan nama_arab
-            $kategoriData = DB::table('kategori')
-                ->where('nama_arab', $kategori)
-                ->first();
+        if (!empty($kategoriList)) {
 
-            if ($kategoriData) {
-                $query->where('id_kategori', $kategoriData->id);
+            $kategoriIDs = DB::table('kategori')
+                ->whereIn('nama_arab', $kategoriList)
+                ->pluck('id');
+
+            if ($kategoriIDs->count() > 0) {
+                $query->whereIn('id_kategori', $kategoriIDs);
             }
         }
 

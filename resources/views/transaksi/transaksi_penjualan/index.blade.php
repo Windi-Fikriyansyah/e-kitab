@@ -21,6 +21,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
     <style>
+        .selected-row {
+            background-color: #d1ecf1 !important;
+        }
+
         #diskon-input-container {
             transition: all 0.3s ease;
         }
@@ -457,7 +461,7 @@
                                         <input type="text" class="form-control" name="telepon_pengirim"
                                             id="telepon_pengirim">
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group" style="display:none;">
                                         <label for="alamat_pengirim">Alamat Pengirim</label>
                                         <textarea class="form-control" name="alamat_pengirim" id="alamat_pengirim" rows="2"></textarea>
                                     </div>
@@ -535,17 +539,7 @@
                                         </div>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td style="vertical-align:top; width:30%">
-                                        <label for="bayar">Bayar</label>
-                                    </td>
-                                    <td>
-                                        <div class="form-group">
-                                            <input type="text" name="bayar" id="bayar" onkeyup="byr()"
-                                                class="form-control">
-                                        </div>
-                                    </td>
-                                </tr>
+
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
                                         <label for="potongan-harga">Potongan Harga</label>
@@ -568,6 +562,32 @@
                                                         name="potongan_nominal" placeholder="Nominal Potongan">
                                                 </div>
                                                 <small class="text-muted">Masukkan nominal potongan harga</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align:top; width:30%">
+                                        <label for="diskon-check">Diskon</label>
+                                    </td>
+                                    <td>
+                                        <div class="form-group">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="diskon-check"
+                                                    name="diskon_check">
+                                                <label class="form-check-label" for="diskon-check">Berikan
+                                                    Diskon</label>
+                                            </div>
+                                            <div id="diskon-input-container" style="display: none; margin-top: 10px;">
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="diskon-persen"
+                                                        name="diskon_persen" min="0" max="100"
+                                                        placeholder="Persentase Diskon">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">Masukkan persentase diskon (0-100%)</small>
                                             </div>
                                         </div>
                                     </td>
@@ -606,29 +626,15 @@
                                     </td>
                                 </tr>
 
+
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
-                                        <label for="diskon-check">Diskon</label>
+                                        <label for="bayar">Bayar</label>
                                     </td>
                                     <td>
                                         <div class="form-group">
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox" id="diskon-check"
-                                                    name="diskon_check">
-                                                <label class="form-check-label" for="diskon-check">Berikan
-                                                    Diskon</label>
-                                            </div>
-                                            <div id="diskon-input-container" style="display: none; margin-top: 10px;">
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="diskon-persen"
-                                                        name="diskon_persen" min="0" max="100"
-                                                        placeholder="Persentase Diskon">
-                                                    <div class="input-group-append">
-                                                        <span class="input-group-text">%</span>
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">Masukkan persentase diskon (0-100%)</small>
-                                            </div>
+                                            <input type="text" name="bayar" id="bayar" onkeyup="byr()"
+                                                class="form-control">
                                         </div>
                                     </td>
                                 </tr>
@@ -926,6 +932,8 @@
                     $('#diskon-persen').val('0');
                 }
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             $('#use-deposit-btn').on('click', function() {
@@ -966,6 +974,8 @@
                 $('#bayar').val(formatRupiah(remainingPayment > 0 ? remainingPayment : 0));
 
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
                 calculateKembalian();
 
                 toastr.success('Deposit digunakan: ' + formatRupiah(depositToUse), 'Berhasil');
@@ -975,6 +985,8 @@
                 $('#deposit-used').val('0');
                 $('#bayar').val('0');
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
                 calculateKembalian();
                 toastr.info('Deposit direset', 'Informasi');
             });
@@ -1014,8 +1026,7 @@
 
                 // Validasi dropship mode
                 if ($('#dropship-mode').is(':checked')) {
-                    if (!$('#nama_pengirim').val() || !$('#telepon_pengirim').val() || !$(
-                            '#alamat_pengirim').val() ||
+                    if (!$('#nama_pengirim').val() || !$('#telepon_pengirim').val() ||
                         !$('#nama_penerima').val() || !$('#telepon_penerima').val() || !$(
                             '#alamat_penerima').val()) {
                         toastr.error('Harap lengkapi semua informasi pengirim dan penerima untuk dropship',
@@ -1208,6 +1219,8 @@
 
             $('#deposit').on('change input', function() {
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
             $('#grand_total').on('DOMSubtreeModified', calculateTotalAfterDeposit);
 
@@ -1308,6 +1321,8 @@
                     });
 
                     updateGrandTotal();
+                    syncBayarDenganTotal();
+
                     toastr.info('Mode Dropship dinonaktifkan - Harga kembali ke harga asli', 'Info');
                 }
             });
@@ -1322,6 +1337,8 @@
 
                 $('#deposit').val(formatRupiah(depositValue));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             function refreshCustomerSelect2(newCustomerId, customerName, customerPhone, customerDeposit) {
@@ -1631,6 +1648,16 @@
                 }
             });
 
+            // Klik baris untuk memilih produk
+            $('#produk-table tbody').on('click', 'tr', function(e) {
+                // Abaikan jika klik langsung pada checkbox
+                if ($(e.target).is('input[type="checkbox"]')) return;
+
+                var checkbox = $(this).find('.produk-check');
+                checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
+            });
+
+
             // Fungsi untuk format Rupiah
             function formatRupiah(angka) {
                 if (!angka) return 'Rp 0';
@@ -1669,21 +1696,26 @@
                 });
             });
 
+
             // Ketika checkbox produk di-klik
+            // Checkbox di-klik atau row di-klik
             $('#produk-table tbody').on('change', '.produk-check', function() {
                 var rowData = produkTable.row($(this).closest('tr')).data();
 
                 if ($(this).prop('checked')) {
                     selectedProducts[rowData.id] = rowData;
+                    $(this).closest('tr').addClass('selected-row'); // Tambah highlight
                 } else {
                     delete selectedProducts[rowData.id];
+                    $(this).closest('tr').removeClass('selected-row'); // Hapus highlight
                 }
 
-                // Update select-all checkbox
+                // Update select-all
                 var allChecked = $('.produk-check:visible:checked').length === $('.produk-check:visible')
                     .length;
                 $('#select-all').prop('checked', allChecked);
             });
+
 
             // Tambahkan produk ke cart
             $('#add-to-cart').on('click', function() {
@@ -1740,21 +1772,29 @@
                     }
                 });
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
 
                 $('.qty-input').off('change').on('change', function() {
                     updateSubtotal($(this).closest('tr'));
                     updateGrandTotal();
+                    syncBayarDenganTotal();
+
                 });
 
                 $('.custom-price-input').off('change').on('change', function() {
                     updateSubtotal($(this).closest('tr'));
                     updateGrandTotal();
+                    syncBayarDenganTotal();
+
                 });
 
                 $('.remove-item').off('click').on('click', function() {
                     $(this).closest('tr').remove();
                     updateRowNumbers();
                     updateGrandTotal();
+                    syncBayarDenganTotal();
+
                 });
             }
             // Event handler untuk input Rupiah
@@ -1762,6 +1802,8 @@
                 $(this).val(formatRupiahInput($(this).val(), 'Rp '));
                 updateSubtotal($(this).closest('tr'));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             // Event handler saat input kehilangan fokus
@@ -1770,6 +1812,8 @@
                 $(this).val(formatRupiah(value));
                 updateSubtotal($(this).closest('tr'));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
             // Fungsi untuk format input Rupiah
             function formatRupiahInput(angka, prefix) {
@@ -1822,17 +1866,23 @@
                     $('#potongan-nominal').val('0');
                 }
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             $('#ongkir, #packing_kayu').on('keyup', function() {
                 $(this).val(formatRupiahInput($(this).val(), ''));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             $('#ongkir, #packing_kayu').on('blur', function() {
                 var value = parseRupiah($(this).val());
                 $(this).val(formatRupiah(value));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             // Format input potongan nominal
@@ -1844,6 +1894,8 @@
                 var value = parseRupiah($(this).val());
                 $(this).val(formatRupiah(value));
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             function updateGrandTotal() {
@@ -1895,12 +1947,29 @@
                 calculateKembalian();
             }
 
+            var bayarManual = false;
+
+            // Ketika user mengetik → aktifkan mode manual
+            $('#bayar').on('input', function() {
+                bayarManual = true;
+            });
+
+            // Jika total berubah → hanya update bayar kalau bukan manual
+            function syncBayarDenganTotal() {
+                if (!bayarManual) {
+                    $('#bayar').val(formatRupiah($('#total').val()));
+                }
+            }
+
+
             $('#potongan-nominal').on('input change', function() {
                 var value = parseRupiah($(this).val()) || 0;
                 if (value < 0) {
                     $(this).val(0);
                 }
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             // Event handler untuk input persentase diskon
@@ -1912,6 +1981,8 @@
                     $(this).val(100);
                 }
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             });
 
             $('#form-transaksi').append(
@@ -1965,6 +2036,13 @@
             // Di dalam $(document).ready(function() { ... }), tambahkan:
             // Real-time calculation for kembalian
             $('#bayar').on('input', calculateKembalian);
+            $('#bayar').on('blur', function() {
+                if ($(this).val().trim() === '') {
+                    bayarManual = false;
+                    updateGrandTotal();
+                }
+            });
+
             $('#total').on('change', calculateKembalian);
             $('#dp').change(calculateKembalian);
             $('input[name="status_pembayaran"]').change(calculateKembalian);
@@ -2031,6 +2109,8 @@
             function calculateTotalAfterDeposit() {
                 // Panggil updateGrandTotal untuk recalculate semua
                 updateGrandTotal();
+                syncBayarDenganTotal();
+
             }
         });
     </script>

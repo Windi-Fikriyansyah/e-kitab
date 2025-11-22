@@ -131,11 +131,71 @@
                                         <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start">
                                             <div class="stats-icon mb-2 d-flex align-items-center justify-content-center rounded"
                                                 style="background-color: rgba(255,255,255,0.2); width: 50px; height: 50px;">
-                                                <i class="fa-solid fa-box-open fa-lg text-white"></i>
+                                                <i class="fa-solid fa-boxes-packing fa-lg text-white"></i>
                                             </div>
                                         </div>
                                         <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
                                             <h6 class="font-semibold mb-0 text-white">Input Produk</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3 col-md-6">
+                            <div class="card card-clickable text-white shadow-sm border-0"
+                                style="background-color: #1d4ed8; cursor: pointer; transition: all 0.3s;"
+                                onclick="window.location='{{ route('kelola_data.produk.index') }}'">
+                                <div class="card-body px-4 py-4-5">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start">
+                                            <div class="stats-icon mb-2 d-flex align-items-center justify-content-center rounded"
+                                                style="background-color: rgba(255,255,255,0.2); width: 50px; height: 50px;">
+                                                <i class="fa-solid fa-box-open fa-lg text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
+                                            <h6 class="font-semibold mb-0 text-white">Data Produk</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3 col-md-6">
+                            <div class="card card-clickable text-white shadow-sm border-0"
+                                style="background-color: #f59e0b; cursor: pointer; transition: all 0.3s;"
+                                onclick="window.location='{{ route('kelola_data.customer.index') }}'">
+                                <div class="card-body px-4 py-4-5">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start">
+                                            <div class="stats-icon mb-2 d-flex align-items-center justify-content-center rounded"
+                                                style="background-color: rgba(255,255,255,0.2); width: 50px; height: 50px;">
+                                                <i class="fa-solid fa-address-book fa-lg text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
+                                            <h6 class="font-semibold mb-0 text-white">Data Customer</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3 col-md-6">
+                            <div class="card card-clickable text-white shadow-sm border-0"
+                                style="background-color: #d97706; cursor: pointer; transition: all 0.3s;"
+                                onclick="window.location='{{ route('transaksi.data_transaksi.index') }}'">
+                                <div class="card-body px-4 py-4-5">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start">
+                                            <div class="stats-icon mb-2 d-flex align-items-center justify-content-center rounded"
+                                                style="background-color: rgba(255,255,255,0.2); width: 50px; height: 50px;">
+                                                <i class="fa-solid fa-receipt fa-lg text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
+                                            <h6 class="font-semibold mb-0 text-white">Data Transaksi</h6>
                                         </div>
                                     </div>
                                 </div>
@@ -174,7 +234,8 @@
                                                             <p class="font-bold mb-0">{{ $product->kategori }}</p>
                                                         </td>
                                                         <td class="col-auto">
-                                                            <p class="mb-0">{{ number_format($product->total_sold) }}</p>
+                                                            <p class="mb-0">{{ number_format($product->total_sold) }}
+                                                            </p>
                                                         </td>
                                                     </tr>
                                                 @endforeach

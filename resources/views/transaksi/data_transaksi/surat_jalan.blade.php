@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Jalan - {{ $profilPerusahaan->nama_perusahaan ?? 'Dar Ibnu Abbas' }}</title>
+    <title>Invoice - {{ $profilPerusahaan->nama_perusahaan ?? 'Dar Ibnu Abbas' }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -339,19 +339,33 @@
         <div class="payment-section">
             <div class="payment-info-section">
                 <div class="payment-info">Pembayaran dapat dilakukan pada No Rekening:</div>
+
                 <div class="payment-details">
-                    <div><strong>A.N. {{ strtoupper($profilPerusahaan->nama_pemilik ?? 'RIEZKI DARMAWAN') }}</strong>
-                    </div>
-                    @if ($profilPerusahaan->bank_bsi ?? false)
-                        <div>BSI: {{ $profilPerusahaan->bank_bsi ?? '7140210581' }}</div>
-                    @endif
-                    @if ($profilPerusahaan->bank_bca ?? false)
-                        <div>BCA: {{ $profilPerusahaan->bank_bca ?? '0380025866' }}</div>
-                    @endif
-                    @if ($profilPerusahaan->bank_lain ?? false)
-                        <div>{{ $profilPerusahaan->bank_lain }}</div>
-                    @endif
+
+                    @php
+                        $bankList = json_decode($profilPerusahaan->banks ?? '[]');
+                    @endphp
+
+                    @foreach ($bankList as $bank)
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+
+                            {{-- LOGO BANK --}}
+                            <img src="{{ asset('storage/' . $bank->logo_bank) }}" alt="Logo {{ $bank->nama_bank }}"
+                                style="height: 22px; margin-right: 8px;">
+
+                            {{-- INFO REKENING --}}
+                            <div>
+                                <strong>{{ strtoupper($bank->nama_bank) }}</strong> :
+                                {{ $bank->no_rek }}<br>
+                                <small>A.N. {{ strtoupper($bank->nama_pemilik) }}</small>
+                            </div>
+
+                        </div>
+                    @endforeach
+
                 </div>
+
+
 
                 <div class="notes">PERHATIAN!!</div>
                 <div class="notes-content">

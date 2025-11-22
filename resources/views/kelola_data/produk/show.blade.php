@@ -20,7 +20,21 @@
                             </tr>
                             <tr>
                                 <th>الفنون</th>
-                                <td>{{ $produk->kategori }}</td>
+                                <td>
+                                    @php
+                                        $kategoriArab = json_decode($produk->kategori, true);
+                                    @endphp
+
+                                    @if (is_array($kategoriArab))
+                                        @foreach ($kategoriArab as $kat)
+                                            <span class="badge bg-primary"
+                                                style="font-size:14px;">{{ $kat }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="badge bg-primary">{{ $produk->kategori }}</span>
+                                    @endif
+                                </td>
+
                             </tr>
                             <tr>
                                 <th>العنوان</th>
@@ -77,7 +91,21 @@
                             </tr>
                             <tr>
                                 <th>Kategori</th>
-                                <td>{{ $produk->kategori_indo }}</td>
+                                <td>
+                                    @php
+                                        $kategoriIndo = json_decode($produk->kategori_indo, true);
+                                    @endphp
+
+                                    @if (is_array($kategoriIndo))
+                                        @foreach ($kategoriIndo as $kat)
+                                            <span class="badge bg-success"
+                                                style="font-size:14px;">{{ $kat }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="badge bg-success">{{ $produk->kategori_indo }}</span>
+                                    @endif
+                                </td>
+
                             </tr>
                             <tr>
                                 <th>Penerbit</th>

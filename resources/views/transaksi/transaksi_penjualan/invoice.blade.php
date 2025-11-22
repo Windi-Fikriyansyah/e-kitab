@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Invoice #{{ $transaksi->kode_transaksi }}</title>
+    <title>Surat Jalan #{{ $transaksi->kode_transaksi }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -692,7 +692,12 @@
                 class="print-button">
                 Cetak Thermal
             </a>
-            <button onclick="window.print()" class="print-button">Cetak Invoice</button>
+            <button onclick="window.print()" class="print-button">Cetak Surat Jalan</button>
+            <a href="{{ route('transaksi.data_transaksi.cetak_surat_jalan', $transaksi->id) }}" target="_blank"
+                class="print-button">
+                Cetak Invoice
+            </a>
+
             <button onclick="window.close()" class="close-button">Tutup</button>
         </div>
     </div>
