@@ -1,0 +1,24 @@
+{
+    frankenphp {
+        # Konfigurasi PHP menggunakan format yang benar: php_ini "key" "value"
+        php_ini "upload_max_filesize" "2048M"
+        php_ini "post_max_size" "2048M"
+        php_ini "memory_limit" "2048M"
+        php_ini "max_execution_time" "3600"
+        php_ini "max_input_time" "3600"
+        php_ini "max_input_vars" "10000"
+        php_ini "output_buffering" "Off"
+        php_ini "implicit_flush" "On"
+    }
+    order php_server before file_server
+}
+
+manajemen.daribnuabbas.com {
+    root * public
+    request_body {
+        max_size 2GB
+    }
+    php_server
+    encode gzip
+    file_server
+}
