@@ -654,7 +654,7 @@ class ProdukController extends Controller
         // dd($request->all());
         $request->validate([
             'judul_arab' => 'required|string|max:255',
-            'judul_indonesia' => 'required|string|max:255',
+            'judul_indonesia' => 'nullable|string|max:255',
             'link_youtube' => 'nullable|string|url|max:255',
             'kategori' => 'nullable',
             'kategori_indonesia' => 'nullable',
@@ -703,6 +703,33 @@ class ProdukController extends Controller
             'images.*.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif',
             'images.*.max' => 'Ukuran gambar maksimal 2MB'
         ]);
+
+        $judulArab = trim($request->judul_arab);
+        $penulis   = $request->penulis;
+        $penerbit  = $request->penerbit;
+        $supplier  = $request->supplier;
+
+        $produkDuplikat = DB::table('produk')
+            ->where('judul', 'LIKE', '%' . $judulArab . '%')
+            ->where(function ($q) use ($penulis, $penerbit, $supplier) {
+                $q->where('penulis', $penulis)
+                    ->orWhere('penerbit', $penerbit)
+                    ->orWhere('supplier', $supplier);
+            })
+            ->first();
+
+        if ($produkDuplikat) {
+            return back()->withInput()->with([
+                'message' =>
+                "⚠️ Produk yang mirip sudah ada: <br>
+             Judul: <b>{$produkDuplikat->judul}</b><br>
+             Penerbit: <b>{$produkDuplikat->penerbit}</b><br>
+             Penulis: <b>{$produkDuplikat->penulis}</b>",
+                'message_type' => 'danger',
+                'message_title' => 'Duplikasi Produk'
+            ]);
+        }
+
 
         try {
             DB::beginTransaction();
@@ -874,6 +901,29 @@ class ProdukController extends Controller
             'images.*.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif',
             'images.*.max' => 'Ukuran gambar maksimal 2MB'
         ]);
+
+
+        $produkDuplikat = DB::table('produk')
+            ->where('id', '!=', $decryptedId)
+            ->where('judul', 'LIKE', '%' . trim($request->judul_arab) . '%')
+            ->where(function ($q) use ($request) {
+                $q->where('penulis', $request->penulis)
+                    ->orWhere('penerbit', $request->penerbit)
+                    ->orWhere('supplier', $request->supplier);
+            })
+            ->first();
+
+        if ($produkDuplikat) {
+            return back()->withInput()->with([
+                'message' =>
+                "⚠️ Data mirip terdeteksi:<br>
+             Judul: <b>{$produkDuplikat->judul}</b><br>
+             Penerbit: <b>{$produkDuplikat->penerbit}</b><br>
+             Penulis: <b>{$produkDuplikat->penulis}</b>",
+                'message_type' => 'danger',
+                'message_title' => 'Duplikasi Produk'
+            ]);
+        }
 
         try {
             DB::beginTransaction();

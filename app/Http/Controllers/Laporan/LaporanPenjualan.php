@@ -70,10 +70,28 @@ class LaporanPenjualan extends Controller
                 DB::raw('SUM(total) as total_nilai')
             )->first();
 
+            $omsetQuery = clone $query;
+            $omsetData = $omsetQuery
+                ->select(DB::raw('SUM(transaksi.total) as total_omset'))
+                ->first();
+
+            $modalQuery = clone $query;
+            $modalData = $modalQuery
+                ->leftJoin('transaksi_items', 'transaksi.id', '=', 'transaksi_items.id_transaksi')
+                ->select(DB::raw('SUM(transaksi_items.quantity * transaksi_items.unit_price) as total_modal'))
+                ->first();
+
+
+
+
+
             return DataTables::of($query)
                 ->with([
                     'total_transaksi' => $totals->total_transaksi ?? 0,
-                    'total_nilai' => $totals->total_nilai ?? 0
+                    'total_nilai' => $totals->total_nilai ?? 0,
+                    'total_omset'     => $omsetData->total_omset ?? 0,
+                    'total_modal'     => $modalData->total_modal ?? 0,
+                    'total_laba'      => ($omsetData->total_omset - $modalData->total_modal)
                 ])
                 ->make(true);
         } catch (\Exception $e) {

@@ -65,15 +65,24 @@ class DataTransaksiController extends Controller
                 $detailButton = '<button class="btn btn-sm btn-primary right-gap detail-btn" data-url="' . route('transaksi.data_transaksi.detail', Crypt::encrypt($row->id)) . '"><i class="fas fa-eye"></i></button>';
                 $printButton = '<button class="btn btn-sm btn-info right-gap print-btn" data-id="' . $row->id . '"><i class="fas fa-print"></i></button>';
                 $payButton = '';
+
                 if ($row->payment_status == 'hutang') {
                     $payButton = '<button class="btn btn-sm btn-success right-gap pay-btn" data-url="' . route('transaksi.data_transaksi.pay', Crypt::encrypt($row->id)) . '" data-remaining="' . $row->remaining_amount . '"><i class="fas fa-money-bill-wave"></i> Bayar</button>';
                 }
 
+
+                $cancelButton = '';
+                if (auth()->user()->role == 1 && $row->payment_status == 'lunas') {
+                    $cancelButton = '<button class="btn btn-sm btn-warning right-gap cancel-btn"
+                        data-url="' . route('transaksi.data_transaksi.cancel', Crypt::encrypt($row->id)) . '">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>';
+                }
                 $deleteButton = '';
                 if ($row->payment_status != 'lunas') {
                     $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('transaksi.data_transaksi.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
                 }
-                return $detailButton . $printButton . $payButton . $deleteButton;
+                return $detailButton . $printButton . $cancelButton . $payButton . $deleteButton;
             })
             ->editColumn('total', function ($row) {
                 if ($row->payment_status === 'hutang') {
@@ -97,6 +106,48 @@ class DataTransaksiController extends Controller
             ->rawColumns(['aksi'])
             ->make(true);
     }
+
+    public function cancel($id)
+    {
+
+        try {
+            $decryptedId = Crypt::decrypt($id);
+
+            $trans = DB::table('transaksi')->where('id', $decryptedId)->first();
+
+            if (!$trans) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ]);
+            }
+
+            if ($trans->payment_status != 'lunas') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cancel hanya bisa untuk transaksi lunas'
+                ]);
+            }
+
+            DB::table('transaksi')
+                ->where('id', $decryptedId)
+                ->update([
+                    'payment_status' => 'cancel',
+                    'updated_at' => now()
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil dicancel'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal cancel transaksi'
+            ]);
+        }
+    }
+
 
     public function cetakInvoice($id)
     {

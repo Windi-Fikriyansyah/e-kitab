@@ -214,6 +214,9 @@
                     <i class="fa fa-plus mr-2"></i>Pilih Produk
                 </button>
 
+                <button type="button" class="btn btn-info mr-2" id="load-draft-btn">
+                    <i class="fa fa-folder-open mr-2"></i>Load Draft
+                </button>
                 <div class="form-check form-check-inline mt-2 mt-md-0">
                     <input class="form-check-input" type="checkbox" id="dropship-mode" name="dropship_mode">
                     <label class="form-check-label" for="dropship-mode">Mode Dropship</label>
@@ -611,7 +614,7 @@
 
                                 <tr>
                                     <td style="vertical-align:top; width:30%">
-                                        <label for="packing_kayu">Packing Kayu</label>
+                                        <label for="packing_kayu">Packing Tambahan</label>
                                     </td>
                                     <td>
                                         <div class="form-group">
@@ -620,7 +623,7 @@
                                                     <span class="input-group-text">Rp</span>
                                                 </div>
                                                 <input type="text" class="form-control" id="packing_kayu"
-                                                    name="packing_kayu" placeholder="Biaya Tambahan Packing Kayu">
+                                                    name="packing_kayu" placeholder="Biaya Packing Tambahan">
                                             </div>
                                         </div>
                                     </td>
@@ -657,9 +660,15 @@
                             <input type="hidden" name="discount" value="0">
                             <input type="hidden" name="potongan" value="0">
                             <div align="right">
+                                <button type="button" name="simpan_draft" id="simpan_draft"
+                                    class="btn btn-secondary mr-2">
+                                    <i class="fa fa-save"></i> Simpan Draft
+                                </button>
                                 <button type="submit" name="simpan" id="simpan" class="btn btn-primary">
                                     <i class="fa fa-paper-plane"></i> Simpan
                                 </button>
+
+
 
                             </div>
                         </div>
@@ -706,6 +715,9 @@
                                 <th>Supplier</th>
                                 <th>Stok</th>
                                 <th>Harga</th>
+                                @if (auth()->user()->role === '1')
+                                    <th>Laba</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -785,6 +797,41 @@
         </div>
     </div>
 
+
+    <div class="modal fade" id="modal-load-draft" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Draft Transaksi Tersimpan</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="draft-table" class="table table-bordered table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Kode Draft</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Tanggal</th>
+                                <th>Kasir</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data draft akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -800,6 +847,384 @@
 
     <script>
         $(document).ready(function() {
+
+            // Variabel global untuk menyimpan data draft yang sedang diproses
+            var currentDraftData = null;
+
+            // Fungsi untuk membuka modal load draft
+            $('#load-draft-btn').on('click', function() {
+                loadDraftList();
+                $('#modal-load-draft').modal('show');
+            });
+
+            // Fungsi untuk memuat daftar draft
+            function loadDraftList() {
+                $.ajax({
+                    url: "{{ route('transaksi.transaksi_penjualan.getDraftList') }}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.success) {
+                            populateDraftTable(response.data);
+                        } else {
+                            toastr.error('Gagal memuat data draft', 'Error');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Gagal memuat data draft', 'Error');
+                        console.error('Error:', xhr.responseText);
+                    }
+                });
+            }
+
+            // Fungsi untuk mengisi tabel draft
+            function populateDraftTable(drafts) {
+                var tableBody = $('#draft-table tbody');
+                tableBody.empty();
+
+                if (drafts.length === 0) {
+                    tableBody.append(
+                        '<tr>' +
+                        '<td colspan="7" class="text-center">Tidak ada draft transaksi</td>' +
+                        '</tr>'
+                    );
+                    return;
+                }
+
+                drafts.forEach(function(draft, index) {
+                    var row = '<tr>' +
+                        '<td>' + (index + 1) + '</td>' +
+                        '<td>' + draft.kode_transaksi + '</td>' +
+                        '<td>' + (draft.nama_customer || '-') + '</td>' +
+                        '<td>' + formatRupiahDraft(draft.total) + '</td>' +
+                        '<td>' + formatDate(draft.created_at) + '</td>' +
+                        '<td>' + draft.kasir_name + '</td>' +
+                        '<td>' +
+                        '<button type="button" class="btn btn-primary btn-sm load-draft" data-id="' + draft
+                        .id + '">' +
+                        '<i class="fa fa-upload"></i> Load' +
+                        '</button> ' +
+                        '<button type="button" class="btn btn-danger btn-sm delete-draft" data-id="' + draft
+                        .id + '">' +
+                        '<i class="fa fa-trash"></i> Hapus' +
+                        '</button>' +
+                        '</td>' +
+                        '</tr>';
+
+                    tableBody.append(row);
+                });
+
+                // Event handler untuk tombol load draft
+                $('.load-draft').off('click').on('click', function() {
+                    var draftId = $(this).data('id');
+                    loadDraftData(draftId);
+                });
+
+                // Event handler untuk tombol hapus draft
+                $('.delete-draft').off('click').on('click', function() {
+                    var draftId = $(this).data('id');
+                    deleteDraft(draftId);
+                });
+            }
+
+            // Fungsi untuk memuat data draft spesifik
+            function loadDraftData(draftId) {
+                $.ajax({
+                    url: "{{ route('transaksi.transaksi_penjualan.getDraftData') }}",
+                    type: "GET",
+                    data: {
+                        id: draftId
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.success) {
+                            currentDraftData = response.data;
+                            applyDraftToForm(currentDraftData);
+                            $('#modal-load-draft').modal('hide');
+                            toastr.success('Draft berhasil dimuat', 'Sukses');
+                        } else {
+                            toastr.error('Gagal memuat data draft', 'Error');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Gagal memuat data draft', 'Error');
+                        console.error('Error:', xhr.responseText);
+                    }
+                });
+            }
+
+            // Fungsi untuk menerapkan data draft ke form
+            // Fungsi untuk menerapkan data draft ke form - VERSI DIPERBAIKI
+            function applyDraftToForm(draftData) {
+                try {
+                    // Reset form terlebih dahulu
+                    resetForm();
+
+                    // Validasi data draft
+                    if (!draftData || !draftData.transaksi) {
+                        toastr.error('Data draft tidak valid', 'Error');
+                        return;
+                    }
+
+                    var transaksi = draftData.transaksi;
+                    var items = draftData.items || [];
+                    var customer = draftData.customer;
+
+                    console.log('Applying draft data:', transaksi);
+
+                    // SIMPAN DRAFT_ID UNTUK UPDATE
+                    currentDraftData = draftData;
+
+                    // 1. SET CUSTOMER
+                    if (transaksi.id_customer && customer) {
+                        $('#customer').empty().append(
+                            new Option(customer.nama + ' | ' + customer.no_hp, transaksi.id_customer, true,
+                                true)
+                        ).trigger('change');
+                        $('#deposit').val(formatRupiahDraft(customer.deposit || 0));
+                    }
+
+                    // 2. SET PAYMENT STATUS & METHOD
+                    if (transaksi.payment_status) {
+                        $('input[name="status_pembayaran"][value="' + transaksi.payment_status + '"]').prop(
+                            'checked', true);
+                    }
+
+                    if (transaksi.payment_method) {
+                        $('input[name="metode_pembayaran"][value="' + transaksi.payment_method + '"]').prop(
+                            'checked', true);
+                    }
+
+                    // Trigger change untuk payment status
+                    $('input[name="status_pembayaran"]:checked').trigger('change');
+
+                    // 3. SET CHANNEL ORDER
+                    if (transaksi.channel_order) {
+                        $('#channel_order').val(transaksi.channel_order);
+                    }
+
+                    // 4. SET EKSPEDISI
+                    if (transaksi.ekspedisi) {
+                        $('#ekspedisi').val(transaksi.ekspedisi).trigger('change');
+                        if (transaksi.ekspedisi === 'Lainnya' && transaksi.ekspedisi_lain) {
+                            $('#ekspedisi-lain-container').show();
+                            $('#ekspedisi_lain').val(transaksi.ekspedisi_lain);
+                        }
+                    }
+
+                    // 5. SET DROPSHIP MODE & DATA
+                    if (transaksi.is_dropship) {
+                        $('#dropship-mode').prop('checked', true).trigger('change');
+                        setTimeout(function() {
+                            if (transaksi.nama_pengirim) $('#nama_pengirim').val(transaksi.nama_pengirim);
+                            if (transaksi.telepon_pengirim) $('#telepon_pengirim').val(transaksi
+                                .telepon_pengirim);
+                            if (transaksi.alamat_pengirim) $('#alamat_pengirim').val(transaksi
+                                .alamat_pengirim);
+                            if (transaksi.nama_penerima) $('#nama_penerima').val(transaksi.nama_penerima);
+                            if (transaksi.telepon_penerima) $('#telepon_penerima').val(transaksi
+                                .telepon_penerima);
+                            if (transaksi.alamat_penerima) $('#alamat_penerima').val(transaksi
+                                .alamat_penerima);
+                        }, 300);
+                    }
+
+                    // 6. SET NILAI NUMERIK
+                    if (transaksi.ongkir) $('#ongkir').val(formatRupiahDraft(transaksi.ongkir));
+                    if (transaksi.packing_kayu) $('#packing_kayu').val(formatRupiahDraft(transaksi.packing_kayu));
+                    if (transaksi.potongan) {
+                        $('#potongan-nominal').val(formatRupiahDraft(transaksi.potongan));
+                        $('#potongan-check').prop('checked', true);
+                        $('#potongan-input-container').show();
+                    }
+                    if (transaksi.discount) {
+                        $('#diskon-persen').val(transaksi.discount);
+                        $('#diskon-check').prop('checked', true);
+                        $('#diskon-input-container').show();
+                    }
+
+                    // 7. SET CATATAN
+                    if (transaksi.notes) $('#catatan').val(transaksi.notes);
+
+                    // 8. SET PAYMENT AMOUNTS
+                    if (transaksi.paid_amount) $('#bayar').val(formatRupiahDraft(transaksi.paid_amount));
+
+                    // 9. LOAD ITEMS KE CART
+                    if (items.length > 0) {
+                        loadDraftItemsToCart(items);
+                    } else {
+                        toastr.warning('Tidak ada items dalam draft ini', 'Peringatan');
+                    }
+
+                    // 10. UPDATE GRAND TOTAL
+                    setTimeout(function() {
+                        updateGrandTotal();
+                        syncBayarDenganTotal();
+                        calculateKembalian();
+                    }, 500);
+
+                    toastr.success('Draft berhasil dimuat. Klik "Simpan Draft" untuk update perubahan.', 'Sukses');
+
+                } catch (error) {
+                    console.error('Error applying draft:', error);
+                    toastr.error('Gagal menerapkan data draft ke form', 'Error');
+                }
+            }
+
+            // Fungsi untuk memuat items draft ke cart
+            // Fungsi untuk memuat items draft ke cart - VERSI DIPERBAIKI
+            function loadDraftItemsToCart(items) {
+                $('#cart_table').empty();
+
+                items.forEach(function(item, index) {
+                    // Debug: console log untuk melihat struktur data
+                    console.log('Item data:', item);
+
+                    // Gunakan data yang tersedia dengan fallback
+                    var produkId = item.produk?.id || item.id || index + 1;
+                    var kodeProduk = item.kd_produk || '';
+                    var judul = item.produk?.judul || item.judul || 'Produk Tidak Ditemukan';
+                    var supplier = item.produk?.supplier || item.supplier || '-';
+                    var originalPrice = item.original_price || 0;
+                    var unitPrice = item.unit_price || originalPrice;
+                    var quantity = item.quantity || 1;
+                    var totalPrice = item.total_price || (unitPrice * quantity);
+                    var stok = item.produk?.stok || item.stok || 0;
+
+                    var newRow = '<tr data-id="' + produkId + '">' +
+                        '<td>' + (index + 1) + '</td>' +
+                        '<td>' + kodeProduk + '</td>' +
+                        '<td>' + judul + '</td>' +
+                        '<td>' + supplier + '</td>' +
+                        '<td class="harga-asli" data-value="' + originalPrice + '">' +
+                        formatRupiahDraft(originalPrice) + '</td>' +
+                        '<td class="custom-price-cell"><input type="text" class="form-control custom-price-input" value="' +
+                        formatRupiahDraft(unitPrice) + '" style="width: 100%;"></td>' +
+                        '<td>' +
+                        '<input type="number" class="form-control qty-input" value="' + quantity +
+                        '" min="1" style="width: 70px;">' +
+                        '<span class="stok" style="display:none;">' + stok + '</span>' +
+                        '</td>' +
+                        '<td class="subtotal">' + formatRupiahDraft(totalPrice) + '</td>' +
+                        '<td><button type="button" class="btn btn-danger btn-sm remove-item"><i class="fa fa-trash"></i></button></td>' +
+                        '</tr>';
+
+                    $('#cart_table').append(newRow);
+                });
+
+                // Attach event handlers untuk items yang baru dimuat
+                attachCartEventHandlers();
+
+                // Update grand total
+                updateGrandTotal();
+                syncBayarDenganTotal();
+            }
+            // Fungsi untuk menghapus draft
+            function deleteDraft(draftId) {
+                if (!confirm('Apakah Anda yakin ingin menghapus draft ini?')) {
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('transaksi.transaksi_penjualan.deleteDraft') }}",
+                    type: "DELETE",
+                    data: {
+                        id: draftId,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success('Draft berhasil dihapus', 'Sukses');
+                            loadDraftList(); // Refresh list
+                        } else {
+                            toastr.error('Gagal menghapus draft', 'Error');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Gagal menghapus draft', 'Error');
+                        console.error('Error:', xhr.responseText);
+                    }
+                });
+            }
+
+            // Fungsi untuk reset form
+            // Fungsi untuk reset form - TAMBAHKAN RESET currentDraftData
+            function resetForm() {
+                // Reset currentDraftData saat form direset
+                currentDraftData = null;
+
+                $('#cart_table').empty();
+                $('#customer').val('').trigger('change');
+                $('input[name="status_pembayaran"][value="lunas"]').prop('checked', true);
+                $('input[name="metode_pembayaran"][value="tunai"]').prop('checked', true);
+                $('#channel_order').val('');
+                $('#ekspedisi').val('');
+                $('#ekspedisi-lain-container').hide();
+                $('#dropship-mode').prop('checked', false).trigger('change');
+                $('#nama_pengirim, #telepon_pengirim, #alamat_pengirim, #nama_penerima, #telepon_penerima, #alamat_penerima')
+                    .val('');
+                $('#ongkir, #packing_kayu, #potongan-nominal, #diskon-persen, #catatan').val('');
+                $('#potongan-check, #diskon-check').prop('checked', false);
+                $('#potongan-input-container, #diskon-input-container').hide();
+                $('#deposit').val('0');
+                $('#deposit-used').val('0');
+                $('#bayar').val('0');
+                updateGrandTotal();
+                syncBayarDenganTotal();
+            }
+
+            // Fungsi untuk attach event handlers ke cart items
+            function attachCartEventHandlers() {
+                $('.qty-input').off('change').on('change', function() {
+                    updateSubtotal($(this).closest('tr'));
+                    updateGrandTotal();
+                    syncBayarDenganTotal();
+                });
+
+                $('.custom-price-input').off('change').on('change', function() {
+                    updateSubtotal($(this).closest('tr'));
+                    updateGrandTotal();
+                    syncBayarDenganTotal();
+                });
+
+                $('.remove-item').off('click').on('click', function() {
+                    $(this).closest('tr').remove();
+                    updateRowNumbers();
+                    updateGrandTotal();
+                    syncBayarDenganTotal();
+                });
+            }
+
+            // Fungsi untuk format tanggal
+            function formatDate(dateString) {
+                var date = new Date(dateString);
+                return date.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+
+            function formatRupiahDraft(value) {
+                if (value === null || value === undefined || value === '') return 'Rp 0';
+
+                // Ambil hanya angka + titik desimal
+                let cleaned = String(value).replace(/[^0-9.]/g, '');
+
+                // Konversi menjadi number (mengubah "43000.0" menjadi 43000)
+                let number = Number(cleaned);
+
+                if (isNaN(number)) number = 0;
+
+                // Convert ke format Indonesian number
+                return "Rp " + number.toLocaleString("id-ID");
+            }
+
+
             $('#ekspedisi').change(function() {
                 if ($(this).val() === 'Lainnya') {
                     $('#ekspedisi-lain-container').show();
@@ -869,8 +1294,8 @@
             $('#dropship-mode').change(function() {
                 if ($(this).is(':checked')) {
                     // Disable customer selection
-                    $('#customer').prop('disabled', true).val('').trigger('change');
-                    $('.input-group-append button').prop('disabled', true);
+                    // $('#customer').prop('disabled', true).val('').trigger('change');
+                    // $('.input-group-append button').prop('disabled', true);
 
                     // Show dropship info fields
                     $('.dropship-info').show();
@@ -897,6 +1322,62 @@
                     $('body').removeClass('dropship-mode');
 
                     toastr.info('Mode Dropship dinonaktifkan', 'Info');
+                }
+            });
+
+            function setPengirimFromCustomer(customer) {
+                if (!customer) return;
+
+                $("#nama_pengirim").val(customer.text.split(" | ")[0]).prop("disabled", true);
+                $("#telepon_pengirim").val(customer.text.split(" | ")[1] || "").prop("disabled", true);
+                $("#alamat_pengirim").val(customer.alamat || "").prop("disabled", true);
+            }
+
+            function clearPengirimManual() {
+                $("#nama_pengirim").val("").prop("disabled", false);
+                $("#telepon_pengirim").val("").prop("disabled", false);
+                $("#alamat_pengirim").val("").prop("disabled", false);
+            }
+
+            // Toggle Dropship Mode
+            $("#dropship-mode").on("change", function() {
+                if ($(this).is(":checked")) {
+                    $("body").addClass("dropship-mode");
+                    $(".dropship-info").show();
+
+                    // customer SELECT TETAP BISA
+                    $("#customer").prop("disabled", false);
+                    $(".input-group-append button").prop("disabled", false);
+
+                    toastr.info("Mode Dropship aktif - Anda dapat memilih pelanggan sebagai pengirim",
+                        "Info");
+
+                    // Jika pelanggan sudah dipilih → isi otomatis
+                    if ($("#customer").val()) {
+                        let c = $("#customer").select2("data")[0];
+                        setPengirimFromCustomer(c);
+                    }
+                } else {
+                    $("body").removeClass("dropship-mode");
+                    $(".dropship-info").hide();
+
+                    // Reset input pengirim
+                    clearPengirimManual();
+
+                    toastr.info("Mode Dropship dimatikan", "Info");
+                }
+            });
+
+            // Ketika pelanggan berubah
+            $("#customer").on("change", function() {
+                if (!$("#dropship-mode").is(":checked")) return; // hanya bekerja saat dropship
+
+                let selected = $("#customer").select2("data")[0];
+
+                if (selected && selected.id) {
+                    setPengirimFromCustomer(selected);
+                } else {
+                    clearPengirimManual();
                 }
             });
 
@@ -1014,6 +1495,21 @@
                 return isValid;
             }
 
+            // Tambahkan di bagian event handler untuk tombol load draft
+            $('.load-draft').off('click').on('click', function() {
+                var draftId = $(this).data('id');
+
+                // Jika ada perubahan yang belum disimpan, tampilkan konfirmasi
+                if ($('#cart_table tr').length > 0 || currentDraftData) {
+                    if (confirm(
+                            'Anda memiliki data yang belum disimpan. Load draft akan menggantikan data saat ini. Lanjutkan?'
+                        )) {
+                        loadDraftData(draftId);
+                    }
+                } else {
+                    loadDraftData(draftId);
+                }
+            });
             // Submit form transaksi
             // Submit form transaksi - bagian yang diperbaiki
             $('#form-transaksi').on('submit', function(e) {
@@ -1066,6 +1562,8 @@
                     }
                 }
 
+                var isUpdateDraft = currentDraftData !== null;
+                var draftId = isUpdateDraft ? currentDraftData.transaksi.id : null;
                 // Siapkan data items
                 var items = [];
                 $('#cart_table tr').each(function() {
@@ -1109,6 +1607,10 @@
                     ongkir: parseRupiah($('#ongkir').val()) || 0,
                     packing_kayu: parseRupiah($('#packing_kayu').val()) || 0,
                 };
+
+                if (isUpdateDraft && draftId) {
+                    transaksiData.draft_id = draftId;
+                }
 
                 // Jika metode DP, pastikan payment_method adalah 'dp'
                 if ($('#hutang').is(':checked') && $('#dp').is(':checked')) {
@@ -1399,6 +1901,138 @@
                 }
             }
 
+
+            // Fungsi untuk menyimpan draft TANPA VALIDASI
+            // Fungsi untuk menyimpan draft - VERSI DIPERBAIKI DENGAN UPDATE
+            $('#simpan_draft').on('click', function(e) {
+                e.preventDefault();
+
+                // Tampilkan konfirmasi
+                if (!confirm('Apakah Anda yakin ingin menyimpan sebagai draft?')) {
+                    return;
+                }
+
+                // Cek apakah sedang dalam mode load draft (ada currentDraftData)
+                var isUpdate = currentDraftData !== null;
+                var draftId = isUpdate ? currentDraftData.transaksi.id : null;
+
+                // Siapkan data items
+                var items = [];
+                $('#cart_table tr').each(function() {
+                    var row = $(this);
+                    var quantity = parseInt(row.find('.qty-input').val()) || 0;
+                    var hargaAsli = parseRupiah(row.find('.harga-asli').text());
+                    var hargaCustom = parseRupiah(row.find('.custom-price-input').val());
+
+                    items.push({
+                        kd_produk: row.find('td:eq(1)').text(),
+                        quantity: quantity,
+                        unit_price: $('#dropship-mode').is(':checked') ? hargaCustom :
+                            hargaAsli,
+                        original_price: hargaAsli
+                    });
+                });
+
+                // Siapkan data transaksi untuk draft
+                var transaksiData = {
+                    customer: $('#customer').val() || null,
+                    payment_method: $('input[name="metode_pembayaran"]:checked').val() || 'tunai',
+                    payment_status: $('input[name="status_pembayaran"]:checked').val() || 'lunas',
+                    channel_order: $('#channel_order').val() || 'Offline',
+                    items: items,
+                    subtotal: parseRupiah($('#grand_total').text()) || 0,
+                    total: parseRupiah($('#total').val()) || 0,
+                    paid_amount: parseRupiah($('#bayar').val()) || 0,
+                    used_deposit: parseRupiah($('#deposit-used').val()) || 0,
+                    diskon_persen: parseFloat($('#diskon-persen').val()) || 0,
+                    notes: $('#catatan').val() || '',
+                    ekspedisi: $('#ekspedisi').val() || null,
+                    ekspedisi_lain: $('#ekspedisi_lain').val() || null,
+                    potongan: parseRupiah($('#potongan-nominal').val()) || 0,
+                    is_dropship: $('#dropship-mode').is(':checked') ? 1 : 0,
+                    nama_pengirim: $('#nama_pengirim').val() || "",
+                    telepon_pengirim: $('#telepon_pengirim').val() || "",
+                    alamat_pengirim: $('#alamat_pengirim').val() || "",
+                    nama_penerima: $('#nama_penerima').val() || "",
+                    telepon_penerima: $('#telepon_penerima').val() || "",
+                    alamat_penerima: $('#alamat_penerima').val() || "",
+                    ongkir: parseRupiah($('#ongkir').val()) || 0,
+                    packing_kayu: parseRupiah($('#packing_kayu').val()) || 0,
+                    status_transaksi: 'draft'
+                };
+
+                // Tambahkan draft_id jika sedang update
+                if (isUpdate && draftId) {
+                    transaksiData.draft_id = draftId;
+                }
+
+                // Show loading state
+                const draftBtn = $('#simpan_draft');
+                const originalText = draftBtn.html();
+                draftBtn.prop('disabled', true).html(
+                    '<i class="fa fa-spinner fa-spin"></i> ' +
+                    (isUpdate ? 'Mengupdate Draft...' : 'Menyimpan Draft...')
+                );
+
+                // Kirim data draft ke endpoint
+                $.ajax({
+                    url: "{{ route('transaksi.transaksi_penjualan.simpanDraft') }}",
+                    type: 'POST',
+                    data: transaksiData,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var message = isUpdate ?
+                                'Draft berhasil diupdate!' :
+                                'Draft transaksi berhasil disimpan!';
+
+                            toastr.success(message, 'Sukses!');
+
+                            // Jika update berhasil, update currentDraftData dengan data baru
+                            if (isUpdate && response.data) {
+                                currentDraftData.transaksi.id = response.data.transaksi_id;
+                                currentDraftData.transaksi.kode_transaksi = response.data
+                                    .kode_transaksi;
+                            }
+
+                            // Redirect ke halaman transaksi setelah 2 detik
+                            setTimeout(function() {
+                                window.location.href =
+                                    "{{ route('transaksi.transaksi_penjualan.index') }}";
+                            }, 2000);
+                        } else {
+                            toastr.error(response.message || 'Gagal menyimpan draft transaksi!',
+                                'Error!');
+                        }
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 422) {
+                            let errors = xhr.responseJSON.errors;
+                            let errorMessages = [];
+
+                            $.each(errors, function(key, value) {
+                                errorMessages.push(value[0]);
+                            });
+
+                            toastr.error(errorMessages.join('<br>'), 'Validasi Error!', {
+                                timeOut: 8000,
+                                extendedTimeOut: 3000,
+                                enableHtml: true,
+                                closeButton: true,
+                                progressBar: true
+                            });
+                        } else {
+                            toastr.error('Terjadi kesalahan pada server', 'Error!');
+                        }
+                        console.error('Error:', xhr.responseText);
+                    },
+                    complete: function() {
+                        draftBtn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
             // Submit form customer
             $('#form-customer').on('submit', function(e) {
                 e.preventDefault();
@@ -1629,7 +2263,25 @@
                         render: function(data, type, row) {
                             return formatRupiah(data);
                         }
-                    }
+                    },
+                    @if (auth()->user()->role === '1')
+                        {
+                            data: null,
+                            name: 'laba',
+                            render: function(data, type, row) {
+
+                                var hargaModal = parseInt(row.harga_modal ?? 0);
+                                var hargaJual = parseInt(row.harga_jual ?? 0);
+
+                                // default laba
+                                var laba = hargaJual - hargaModal;
+
+
+
+                                return formatRupiah(laba);
+                            }
+                        },
+                    @endif
                 ],
                 drawCallback: function(settings) {
                     // Setel ulang checkbox setelah draw (setelah pencarian/paging)

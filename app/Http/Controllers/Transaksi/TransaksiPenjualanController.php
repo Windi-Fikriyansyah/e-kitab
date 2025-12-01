@@ -29,7 +29,8 @@ class TransaksiPenjualanController extends Controller
                 'produk.penerbit',
                 'supplier.nama_supplier as supplier',
                 'produk.stok',
-                'produk.harga_jual'
+                'produk.harga_jual',
+                'produk.harga_modal'
             ]);
 
 
@@ -63,6 +64,306 @@ class TransaksiPenjualanController extends Controller
             })
             ->rawColumns(['aksi'])
             ->make(true);
+    }
+
+    public function simpanDraft(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            // VALIDASI SANGAT RINGAN UNTUK DRAFT
+            $request->validate([
+                'customer' => 'nullable|exists:customer,id',
+                'items' => 'required|array|min:1',
+                'items.*.kd_produk' => 'required|exists:produk,kd_produk',
+                'items.*.quantity' => 'required|integer|min:0',
+                'items.*.unit_price' => 'required|numeric|min:0',
+                'items.*.original_price' => 'required|numeric|min:0',
+            ]);
+
+            // CEK APAKAH ADA DRAFT_ID UNTUK UPDATE
+            $draftId = $request->draft_id;
+            $isUpdate = !empty($draftId);
+
+            if ($isUpdate) {
+                // UPDATE DRAFT YANG SUDAH ADA
+                $draft = DB::table('transaksi')
+                    ->where('id', $draftId)
+                    ->where('status_transaksi', 'draft')
+                    ->where('kasir', auth()->user()->id)
+                    ->first();
+
+                if (!$draft) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Draft tidak ditemukan untuk diupdate'
+                    ], 404);
+                }
+
+                $kodeTransaksi = $draft->kode_transaksi;
+
+                // Hapus items lama
+                DB::table('transaksi_items')
+                    ->where('id_transaksi', $draftId)
+                    ->delete();
+            } else {
+                // BUAT DRAFT BARU
+                $lastTransaksi = DB::table('transaksi')
+                    ->whereDate('created_at', today())
+                    ->orderBy('nomor_urut', 'desc')
+                    ->first();
+
+                $kodeTransaksi = 'DRAFT-' . date('Ymd') . '-' . strtoupper(uniqid());
+            }
+
+            // Get customer data
+            $customer = $request->customer ? DB::table('customer')->where('id', $request->customer)->first() : null;
+
+            // Untuk draft, TIDAK mengurangi stok dan deposit
+            $usedDeposit = 0;
+            $remainingAmount = $request->total ?? 0;
+
+            $transaksiData = [
+                'kode_transaksi' => $kodeTransaksi,
+                'id_customer' => $request->customer,
+                'ekspedisi' => $request->ekspedisi,
+                'nama_customer' => $customer ? $customer->nama : null,
+                'no_hp_customer' => $customer ? $customer->no_hp : null,
+                'alamat_customer' => $customer ? $customer->alamat : null,
+                'payment_method' => $request->payment_method ?? 'tunai',
+                'payment_status' => $request->payment_status ?? 'lunas',
+                'channel_order' => $request->channel_order ?? 'Offline',
+                'subtotal' => $request->subtotal ?? 0,
+                'discount' => $request->diskon_persen ?? 0,
+                'potongan' => $request->potongan ?? 0,
+                'total' => $request->total ?? 0,
+                'paid_amount' => $request->paid_amount ?? 0,
+                'remaining_amount' => $remainingAmount,
+                'change_amount' => 0,
+                'notes' => $request->notes,
+                'updated_at' => now(),
+                'kasir' => auth()->user()->id,
+                'is_dropship' => $request->is_dropship ?? 0,
+                'nama_pengirim' => $request->nama_pengirim,
+                'telepon_pengirim' => $request->telepon_pengirim,
+                'alamat_pengirim' => $request->alamat_pengirim,
+                'nama_penerima' => $request->nama_penerima,
+                'telepon_penerima' => $request->telepon_penerima,
+                'alamat_penerima' => $request->alamat_penerima,
+                'ongkir' => $request->ongkir ?? 0,
+                'packing_kayu' => $request->packing_kayu ?? 0,
+                'status_transaksi' => 'draft',
+            ];
+
+            if ($isUpdate) {
+                // UPDATE DRAFT YANG SUDAH ADA
+                DB::table('transaksi')
+                    ->where('id', $draftId)
+                    ->update($transaksiData);
+
+                $transaksiId = $draftId;
+            } else {
+                // BUAT DRAFT BARU
+                $transaksiData['created_at'] = now();
+                $transaksiId = DB::table('transaksi')->insertGetId($transaksiData);
+            }
+
+            // Simpan item transaksi DRAFT
+            foreach ($request->items as $item) {
+                DB::table('transaksi_items')->insert([
+                    'id_transaksi' => $transaksiId,
+                    'kd_produk' => $item['kd_produk'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'original_price' => $item['original_price'],
+                    'is_custom_price' => $item['unit_price'] != $item['original_price'],
+                    'total_price' => $item['quantity'] * $item['unit_price'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $isUpdate ? 'Draft berhasil diupdate' : 'Draft transaksi berhasil disimpan',
+                'data' => [
+                    'kode_transaksi' => $kodeTransaksi,
+                    'transaksi_id' => $transaksiId,
+                    'status' => 'draft',
+                    'is_update' => $isUpdate
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan draft transaksi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    public function getDraftList()
+    {
+        try {
+            $drafts = DB::table('transaksi as t')
+                ->leftJoin('customer as c', 't.id_customer', '=', 'c.id')
+                ->leftJoin('users as u', 't.kasir', '=', 'u.id')
+                ->where('t.status_transaksi', 'draft')
+                ->where('t.kasir', auth()->user()->id) // Hanya draft milik kasir yang login
+                ->select(
+                    't.id',
+                    't.kode_transaksi',
+                    't.nama_customer',
+                    't.total',
+                    't.created_at',
+                    'u.name as kasir_name',
+                    'c.deposit'
+                )
+                ->orderBy('t.created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $drafts
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data draft: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getDraftData(Request $request)
+    {
+        try {
+            $draftId = $request->id;
+
+            $draft = DB::table('transaksi')
+                ->where('id', $draftId)
+                ->where('status_transaksi', 'draft')
+                ->where('kasir', auth()->user()->id)
+                ->first();
+
+            if (!$draft) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Draft tidak ditemukan'
+                ], 404);
+            }
+
+            // Get items draft - PERBAIKI QUERY INI
+            $items = DB::table('transaksi_items as ti')
+                ->join('produk as p', 'ti.kd_produk', '=', 'p.kd_produk')
+                ->where('ti.id_transaksi', $draftId)
+                ->select(
+                    'ti.id',
+                    'ti.kd_produk',
+                    'ti.quantity',
+                    'ti.unit_price',
+                    'ti.original_price',
+                    'ti.total_price',
+                    'ti.is_custom_price',
+                    'p.id as produk_id',
+                    'p.judul',
+                    'p.penulis',
+                    'p.penerbit',
+                    'p.supplier',
+                    'p.stok',
+                    'p.harga_jual',
+                    'p.harga_modal'
+                )
+                ->get();
+
+            // Format items dengan struktur yang diharapkan
+            $formattedItems = $items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'kd_produk' => $item->kd_produk,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'original_price' => $item->original_price,
+                    'total_price' => $item->total_price,
+                    'is_custom_price' => $item->is_custom_price,
+                    'produk' => [
+                        'id' => $item->produk_id,
+                        'judul' => $item->judul,
+                        'penulis' => $item->penulis,
+                        'penerbit' => $item->penerbit,
+                        'supplier' => $item->supplier,
+                        'stok' => $item->stok,
+                        'harga_jual' => $item->harga_jual,
+                        'harga_modal' => $item->harga_modal
+                    ]
+                ];
+            });
+
+            // Get customer data jika ada
+            $customer = null;
+            if ($draft->id_customer) {
+                $customer = DB::table('customer')
+                    ->where('id', $draft->id_customer)
+                    ->first();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'transaksi' => $draft,
+                    'items' => $formattedItems,
+                    'customer' => $customer
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data draft: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteDraft(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $draftId = $request->id;
+
+            $draft = DB::table('transaksi')
+                ->where('id', $draftId)
+                ->where('status_transaksi', 'draft')
+                ->where('kasir', auth()->user()->id)
+                ->first();
+
+            if (!$draft) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Draft tidak ditemukan'
+                ], 404);
+            }
+
+            // Hapus items terlebih dahulu
+            DB::table('transaksi_items')
+                ->where('id_transaksi', $draftId)
+                ->delete();
+
+            // Hapus transaksi draft
+            DB::table('transaksi')
+                ->where('id', $draftId)
+                ->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Draft berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus draft: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function cetakInvoice($id)
@@ -206,8 +507,27 @@ class TransaksiPenjualanController extends Controller
                 'alamat_penerima' => 'nullable|string',
                 'ongkir' => 'numeric|min:0',
                 'packing_kayu' => 'numeric|min:0',
+                'draft_id' => 'nullable|exists:transaksi,id',
             ]);
 
+            $isUpdateDraft = !empty($request->draft_id);
+            $draftId = $request->draft_id;
+
+            if ($isUpdateDraft) {
+                // VALIDASI DRAFT MILIK USER YANG SAMA
+                $existingDraft = DB::table('transaksi')
+                    ->where('id', $draftId)
+                    ->where('status_transaksi', 'draft')
+                    ->where('kasir', auth()->user()->id)
+                    ->first();
+
+                if (!$existingDraft) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Draft tidak ditemukan atau tidak dapat diakses'
+                    ], 404);
+                }
+            }
             // Variabel untuk menyimpan nama ekspedisi yang akan disimpan
             $namaEkspedisi = $request->ekspedisi;
             $ekspedisiLogoPath = null;
@@ -252,7 +572,14 @@ class TransaksiPenjualanController extends Controller
                 ->first();
 
             $nomorUrut = $lastTransaksi ? $lastTransaksi->nomor_urut + 1 : 1;
-            $kodeTransaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
+            if ($isUpdateDraft) {
+                $kodeTransaksi = $existingDraft->kode_transaksi;
+                if (strpos($kodeTransaksi, 'DRAFT-') === 0) {
+                    $kodeTransaksi = str_replace('DRAFT-', 'TRX-', $kodeTransaksi);
+                }
+            } else {
+                $kodeTransaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
+            }
 
             // Get customer data
             $customer = DB::table('customer')->where('id', $request->customer)->first();
@@ -267,7 +594,7 @@ class TransaksiPenjualanController extends Controller
             $remainingAmount = max(0, $totalTransaksi - $usedDeposit - $request->paid_amount);
 
             // Simpan data transaksi
-            $transaksiId = DB::table('transaksi')->insertGetId([
+            $transaksiData = [
                 'kode_transaksi' => $kodeTransaksi,
                 'nomor_urut' => $nomorUrut,
                 'id_customer' => $request->customer,
@@ -298,8 +625,26 @@ class TransaksiPenjualanController extends Controller
                 'alamat_penerima' => $request->alamat_penerima,
                 'ongkir' => $request->ongkir ?? 0,
                 'packing_kayu' => $request->packing_kayu ?? 0,
+                'status_transaksi' => 'completed',
 
-            ]);
+            ];
+            if ($isUpdateDraft) {
+                // UPDATE DRAFT MENJADI TRANSAKSI COMPLETED
+                DB::table('transaksi')
+                    ->where('id', $draftId)
+                    ->update($transaksiData);
+
+                $transaksiId = $draftId;
+
+                // Hapus items lama sebelum menyimpan yang baru
+                DB::table('transaksi_items')
+                    ->where('id_transaksi', $draftId)
+                    ->delete();
+            } else {
+                // BUAT TRANSAKSI BARU
+                $transaksiData['created_at'] = now();
+                $transaksiId = DB::table('transaksi')->insertGetId($transaksiData);
+            }
 
             // Simpan item transaksi
             foreach ($request->items as $item) {
@@ -316,6 +661,7 @@ class TransaksiPenjualanController extends Controller
                 ]);
 
                 // Update stok produk
+
                 DB::table('produk')
                     ->where('kd_produk', $item['kd_produk'])
                     ->decrement('stok', $item['quantity']);

@@ -375,39 +375,85 @@
                 </div>
             </div>
 
+            @php
+                $subtotal = $transaksi->subtotal ?? $items->sum('total_price');
+
+                // POTONGAN (langsung angka dari database)
+                $potongan = $transaksi->potongan ?? 0;
+
+                // DISKON PERSEN (contoh 10 berarti 10%)
+                $discountPercent = $transaksi->discount ?? 0;
+
+                // Hitung diskon rupiah
+                $discountValue = 0;
+                if ($discountPercent > 0) {
+                    $discountValue = ($subtotal - $potongan) * ($discountPercent / 100);
+                }
+            @endphp
+
             <div class="summary-section">
                 <table class="summary-table">
+
+                    {{-- SUBTOTAL --}}
                     <tr>
                         <td><strong>Subtotal</strong></td>
-                        <td class="text-right"><strong>Rp
-                                {{ number_format($transaksi->subtotal ?? $items->sum('total_price'), 0, ',', '.') }}</strong>
-                        </td>
+                        <td class="text-right"><strong>
+                                Rp {{ number_format($subtotal, 0, ',', '.') }}
+                            </strong></td>
                     </tr>
-                    @if (($transaksi->diskon_total ?? 0) > 0)
+
+                    @if ($potongan > 0)
                         <tr>
-                            <td>Total Diskon</td>
-                            <td class="text-right">Rp {{ number_format($transaksi->diskon_total, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <td>Total Setelah Diskon</td>
-                            <td class="text-right">Rp
-                                {{ number_format(($transaksi->subtotal ?? $items->sum('total_price')) - ($transaksi->diskon_total ?? 0), 0, ',', '.') }}
+                            <td>Potongan</td>
+                            <td class="text-right text-danger">
+                                - Rp {{ number_format($potongan, 0, ',', '.') }}
                             </td>
                         </tr>
                     @endif
+
+                    {{-- DISKON (DALAM PERSEN → RUPIAH) --}}
+                    @if ($discountPercent > 0)
+                        <tr>
+                            <td>Diskon ({{ intval($discountPercent) }}%)</td>
+                            <td class="text-right text-danger">
+                                - {{ intval($discountPercent) }}%
+                            </td>
+                        </tr>
+                    @endif
+
+
+
+                    {{-- ONGKIR --}}
                     @if (($transaksi->ongkir ?? 0) > 0)
                         <tr>
                             <td>Ongkos Kirim</td>
-                            <td class="text-right">Rp {{ number_format($transaksi->ongkir, 0, ',', '.') }}</td>
+                            <td class="text-right">
+                                Rp {{ number_format($transaksi->ongkir, 0, ',', '.') }}
+                            </td>
                         </tr>
                     @endif
+                    @if (($transaksi->packing_kayu ?? 0) > 0)
+                        <tr>
+                            <td>Packing Tambahan</td>
+                            <td class="text-right">
+                                Rp {{ number_format($transaksi->packing_kayu, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @endif
+
+                    {{-- POTONGAN --}}
+
+                    {{-- GRAND TOTAL --}}
                     <tr class="total-row">
                         <td><strong>TOTAL</strong></td>
-                        <td class="text-right"><strong>Rp {{ number_format($transaksi->total, 0, ',', '.') }}</strong>
+                        <td class="text-right">
+                            <strong>Rp {{ number_format($transaksi->total, 0, ',', '.') }}</strong>
                         </td>
                     </tr>
+
                 </table>
             </div>
+
         </div>
 
         <div class="signature-section">

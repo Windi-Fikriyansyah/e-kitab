@@ -1,5 +1,5 @@
 @extends('template.app')
-@section('title', 'Laporan Supplier')
+@section('title', 'Laporan Stok')
 @section('content')
 
     <div class="page-content">
@@ -12,69 +12,43 @@
         <div class="card radius-10">
             <div class="card-header">
                 <div class="row align-items-end">
-                    <div class="col-md-3">
-                        <label for="tanggal_awal" class="form-label">Tanggal Awal</label>
-                        <input type="date" class="form-control" id="tanggal_awal" name="tanggal_awal"
-                            value="{{ date('Y-m-01') }}">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="tanggal_akhir" class="form-label">Tanggal Akhir</label>
-                        <input type="date" class="form-control" id="tanggal_akhir" name="tanggal_akhir"
-                            value="{{ date('Y-m-d') }}">
-                    </div>
-                    <div class="col-md-3">
+
+                    <div class="col-md-4">
                         <label for="produk" class="form-label">Produk</label>
-                        <select class="form-select select2-produk" id="produk" name="produk">
-                            <option value="">Semua Produk</option>
-                            @foreach ($products as $product)
-                                <option value="{{ $product->kd_produk }}">{{ $product->judul }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-12 d-flex gap-2">
-                        <button type="button" class="btn btn-primary w-100" onclick="reloadTable()">
-                            <i class="bi bi-filter"></i> Filter
-                        </button>
-                        <button type="button" class="btn btn-success w-100" onclick="exportExcel()">
-                            <i class="bi bi-file-earmark-excel"></i> Export
-                        </button>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body p-2">
-                                <h6 class="mb-0">Total Quantity Terjual: <span id="total-qty" class="fw-bold">0</span>
-                                </h6>
-                            </div>
+
+                        <div class="d-flex gap-2">
+                            <select class="form-select select2-produk" id="produk" name="produk" style="flex: 1;">
+                                <option value="">Semua Produk</option>
+                                @foreach ($products as $product)
+                                    <option value="{{ $product->kd_produk }}">{{ $product->judul }}</option>
+                                @endforeach
+                            </select>
+
+                            <button type="button" class="btn btn-primary" onclick="reloadTable()">
+                                <i class="bi bi-filter"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body p-2">
-                                <h6 class="mb-0">Total Nilai Terjual: <span id="total-nilai" class="fw-bold">Rp 0</span>
-                                </h6>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
+
+
             </div>
 
             <div class="card-body">
+                <div class="mb-3">
+                    <h5>Total Aset Keseluruhan: <span id="total-aset-keseluruhan">Rp 0</span></h5>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table align-middle mb-0" id="laporansupplier" style="width: 100%">
                         <thead>
                             <tr>
-
                                 <th>Nama Barang</th>
                                 <th>Penerbit</th>
-                                <th>Supplier</th>
+                                <th>Stok</th>
                                 <th>Harga</th>
-                                <th>QTY Terjual</th>
-                                <th>Total Terjual</th>
-                                <th>Tanggal Transaksi Terakhir</th>
+                                <th>Total Aset</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,7 +97,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('laporan.rekap_laporan_supplier.load') }}",
+                    url: "{{ route('laporan.rekap_laporan_supplier.load_stok') }}",
                     type: "POST",
                     data: function(d) {
                         d.tanggal_awal = $('#tanggal_awal').val();
@@ -134,6 +108,11 @@
                         $('#total-qty').text(json.total_qty || 0);
                         $('#total-nilai').text('Rp ' + (json.total_nilai ? parseInt(json.total_nilai)
                             .toLocaleString('id-ID') : 0));
+                        $('#total-aset-keseluruhan').text(
+                            'Rp ' + (json.total_aset_keseluruhan ?
+                                parseInt(json.total_aset_keseluruhan).toLocaleString('id-ID') :
+                                0)
+                        );
                         return json.data;
                     }
                 },
@@ -148,8 +127,8 @@
                         name: 'produk.penerbit'
                     },
                     {
-                        data: 'nama_supplier',
-                        name: 'supplier.nama_supplier'
+                        data: 'stok',
+                        name: 'produk.stok'
                     },
                     {
                         data: 'harga_modal',
@@ -159,21 +138,10 @@
                         }
                     },
                     {
-                        data: 'qty_terjual',
-                        name: 'qty_terjual'
-                    },
-                    {
-                        data: 'total_terjual',
-                        name: 'total_terjual',
+                        data: 'total_aset',
+                        name: 'total_aset',
                         render: function(data) {
                             return 'Rp ' + parseInt(data).toLocaleString('id-ID');
-                        }
-                    },
-                    {
-                        data: 'last_transaction',
-                        name: 'last_transaction',
-                        render: function(data) {
-                            return data ? new Date(data).toLocaleDateString('id-ID') : '-';
                         }
                     }
                 ],

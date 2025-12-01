@@ -20,6 +20,16 @@ class RekapSupplierController extends Controller
         return view('laporan.rekapSupplier.index', compact('products'));
     }
 
+    public function index_stok()
+    {
+        $id_supplier = auth()->user()->id_supplier;
+        $products = DB::table('produk')
+            ->where('supplier', $id_supplier)
+            ->get();
+
+        return view('laporan.rekapSupplier.stok', compact('products'));
+    }
+
     public function load(Request $request)
     {
         if ($request->ajax()) {
@@ -36,6 +46,7 @@ class RekapSupplierController extends Controller
                 ->select(
                     'produk.kd_produk',
                     'produk.judul',
+                    'produk.penerbit',
                     'supplier.nama_supplier',
                     'produk.harga_modal',
                     DB::raw('SUM(transaksi_items.quantity) as qty_terjual'),
@@ -52,7 +63,7 @@ class RekapSupplierController extends Controller
                 $query->where('produk.kd_produk', $produk);
             }
 
-            $data = $query->groupBy('produk.kd_produk', 'produk.judul', 'supplier.nama_supplier', 'produk.harga_modal')
+            $data = $query->groupBy('produk.kd_produk', 'produk.judul', 'produk.penerbit', 'supplier.nama_supplier', 'produk.harga_modal')
                 ->get();
 
             // Query terpisah untuk menghitung total (tanpa grouping yang ketat)
@@ -82,6 +93,51 @@ class RekapSupplierController extends Controller
                 ->make(true);
         }
     }
+
+    public function load_stok(Request $request)
+    {
+        if ($request->ajax()) {
+
+            $tanggalAwal = $request->tanggal_awal ?? date('Y-m-01');
+            $tanggalAkhir = $request->tanggal_akhir ?? date('Y-m-d');
+            $produk = $request->produk;
+            $id_supplier = auth()->user()->id_supplier;
+
+            // AMBIL STOK PRODUK SUPPLIER
+            $query = DB::table('produk')
+                ->select(
+                    'produk.kd_produk',
+                    'produk.judul',
+                    'produk.penerbit',
+                    'produk.stok',
+                    'produk.harga_modal',
+                    DB::raw('(produk.stok * produk.harga_modal) as total_aset')
+                )
+                ->where('produk.supplier', $id_supplier);
+
+            // Jika filter produk dipilih
+            if (!empty($produk)) {
+                $query->where('produk.kd_produk', $produk);
+            }
+
+            $data = $query->get();
+
+            // Hitung total qty & nilai
+            $totalQty = $data->sum('stok');
+            $totalNilai = $data->sum('total_aset');
+
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->with([
+                    'total_qty' => $totalQty,
+                    'total_nilai' => $totalNilai,
+                    'total_aset_keseluruhan' => $totalNilai
+                ])
+                ->make(true);
+        }
+    }
+
 
     public function exportExcel(Request $request)
     {

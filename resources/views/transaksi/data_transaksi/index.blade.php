@@ -374,6 +374,37 @@
                 }],
             });
 
+            $(document).on('click', '.cancel-btn', function(e) {
+                e.preventDefault();
+                var cancelUrl = $(this).data('url');
+
+                Swal.fire({
+                    title: 'Cancel Transaksi?',
+                    text: "Transaksi akan menjadi Cancel. Lanjutkan?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Cancel',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+                        $.post(cancelUrl, {}, function(response) {
+                            if (response.success) {
+                                Swal.fire('Berhasil!', response.message, 'success');
+                                $('#data_transaksi').DataTable().ajax.reload();
+                            } else {
+                                Swal.fire('Gagal!', response.message, 'error');
+                            }
+                        }).fail(function(xhr) {
+                            Swal.fire('Error!', 'Terjadi kesalahan pada server', 'error');
+                        });
+
+                    }
+                });
+            });
+
             // Handle detail button click
             $(document).on('click', '.detail-btn', function(e) {
                 e.preventDefault();

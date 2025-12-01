@@ -103,6 +103,46 @@
                         </div>
 
                         <div class="col-6 col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body px-4 py-4-5">
+                                    <div class="row">
+                                        <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
+                                            <div class="stats-icon green mb-2">
+                                                <i class="iconly-boldAdd-User"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
+                                            <h6 class="text-muted font-semibold">Laba Perhari</h6>
+                                            <h6 class="font-extrabold mb-0">Rp
+                                                {{ number_format($labaPerHari, 0, ',', '.') }}</h6>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3 col-md-6">
+                            <div class="card">
+                                <div class="card-body px-4 py-4-5">
+                                    <div class="row">
+                                        <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
+                                            <div class="stats-icon green mb-2">
+                                                <i class="iconly-boldAdd-User"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
+                                            <h6 class="text-muted font-semibold">Laba Perbulan</h6>
+                                            <h6 class="font-extrabold mb-0">Rp
+                                                {{ number_format($labaPerBulan, 0, ',', '.') }}</h6>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3 col-md-6">
                             <div class="card card-clickable text-white shadow-sm border-0"
                                 style="background-color: #059669; cursor: pointer; transition: all 0.3s;"
                                 onclick="window.location='{{ route('transaksi.transaksi_penjualan.index') }}'">

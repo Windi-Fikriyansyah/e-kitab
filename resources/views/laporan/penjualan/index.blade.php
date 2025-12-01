@@ -69,6 +69,39 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <h6 class="mb-0">Total Modal:
+                                    <span id="total-modal" class="fw-bold">Rp 0</span>
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <h6 class="mb-0">Total Omset:
+                                    <span id="total-omset" class="fw-bold">Rp 0</span>
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <h6 class="mb-0">Total Laba:
+                                    <span id="total-laba" class="fw-bold">Rp 0</span>
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="card-body">
@@ -156,6 +189,14 @@
                         $('#total-transaksi').text(json.total_transaksi || 0);
                         $('#total-nilai').text('Rp ' + (json.total_nilai ?
                             parseInt(json.total_nilai).toLocaleString('id-ID') : 0));
+
+                        $('#total-modal').text('Rp ' + (json.total_modal ? parseInt(json.total_modal)
+                            .toLocaleString('id-ID') : 0));
+                        $('#total-omset').text('Rp ' + (json.total_omset ? parseInt(json.total_omset)
+                            .toLocaleString('id-ID') : 0));
+                        $('#total-laba').text('Rp ' + (json.total_laba ? parseInt(json.total_laba)
+                            .toLocaleString('id-ID') : 0));
+
                         return json.data;
                     }
                 },

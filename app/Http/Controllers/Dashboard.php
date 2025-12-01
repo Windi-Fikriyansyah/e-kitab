@@ -43,6 +43,32 @@ class Dashboard extends Controller
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
+
+        $dailyPengeluaran = DB::table('pengeluaran')
+            ->whereDate('tanggal', today())
+            ->sum('nominal');
+
+        $dailyModal = DB::table('transaksi_items')
+            ->join('transaksi', 'transaksi_items.id_transaksi', '=', 'transaksi.id')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('transaksi.payment_status', 'lunas')
+            ->whereDate('transaksi.created_at', today())
+            ->sum(DB::raw('transaksi_items.unit_price * transaksi_items.quantity'));
+        $monthlyModal = DB::table('transaksi_items')
+            ->join('transaksi', 'transaksi_items.id_transaksi', '=', 'transaksi.id')
+            ->join('produk', 'transaksi_items.kd_produk', '=', 'produk.kd_produk')
+            ->where('transaksi.payment_status', 'lunas')
+            ->whereMonth('transaksi.created_at', now()->month)
+            ->whereYear('transaksi.created_at', now()->year)
+            ->sum(DB::raw('transaksi_items.unit_price * transaksi_items.quantity'));
+
+        // Pengeluaran bulanan
+        $monthlyPengeluaran = DB::table('pengeluaran')
+            ->whereMonth('tanggal', now()->month)
+            ->whereYear('tanggal', now()->year)
+            ->sum('nominal');
+        $labaPerHari = $dailyIncome - $dailyModal - $dailyPengeluaran;
+        $labaPerBulan = $monthlyIncome - $monthlyModal - $monthlyPengeluaran;
         // Total transaksi
         $totalTransactions = DB::table('transaksi')->count();
 
@@ -109,6 +135,8 @@ class Dashboard extends Controller
             'totalpiutang' => $totalpiutang,
             'bestSellers' => $bestSellers,
             'lowStockItems' => $lowStockItems,
+            'labaPerHari' => $labaPerHari,
+            'labaPerBulan' => $labaPerBulan,
 
         ]);
     }
