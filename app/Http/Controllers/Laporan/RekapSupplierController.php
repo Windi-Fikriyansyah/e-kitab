@@ -98,8 +98,7 @@ class RekapSupplierController extends Controller
     {
         if ($request->ajax()) {
 
-            $tanggalAwal = $request->tanggal_awal ?? date('Y-m-01');
-            $tanggalAkhir = $request->tanggal_akhir ?? date('Y-m-d');
+
             $produk = $request->produk;
             $id_supplier = auth()->user()->id_supplier;
 
