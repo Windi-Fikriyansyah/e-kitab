@@ -55,9 +55,10 @@
 
                                         @if (isset($kategori))
                                             @foreach ($kategori as $k)
-                                                <option value="{{ $k->nama_arab }}" data-nama_arab="{{ $k->nama_arab }}"
-                                                    data-nama_indonesia="{{ $k->nama_indonesia }}" selected>
-                                                    {{ $k->text }}
+                                                <option value="{{ $k->nama_arab ?? '' }}"
+                                                    data-nama_arab="{{ $k->nama_arab ?? '' }}"
+                                                    data-nama_indonesia="{{ $k->nama_indonesia ?? '' }}" selected>
+                                                    {{ $k->text ?? '' }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -83,9 +84,10 @@
 
                                         @if (isset($subKategori))
                                             @foreach ($subKategori as $s)
-                                                <option value="{{ $s->id }}" data-nama_arab="{{ $s->nama_arab }}"
-                                                    data-nama_indonesia="{{ $s->nama_indonesia }}" selected>
-                                                    {{ $s->text }}
+                                                <option value="{{ $s->nama_arab }}"
+                                                    data-nama_arab="{{ $s->nama_arab ?? '' }}"
+                                                    data-nama_indonesia="{{ $s->nama_indonesia ?? '' }}" selected>
+                                                    {{ $s->text ?? '' }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -851,26 +853,90 @@
             }
         });
     </script>
-    <script>
-        $(document).ready(function() {
-            @if (isset($kategori))
-                renderSelected('selected_kategori', @json($kategori));
 
+    <script>
+        // Ganti fungsi renderSelected yang ada dengan versi baru ini
+        function renderSelected(containerId, dataList, selectId) {
+            let html = '';
+            let indonesiaValues = [];
+
+            dataList.forEach(item => {
+                let arab = item.nama_arab || item.text?.split('|')[0]?.trim() || item.id || '';
+                let indo = item.nama_indonesia || item.text?.split('|')[1]?.trim() || '';
+
+                // Kumpulkan nilai Indonesia
+                if (indo) {
+                    indonesiaValues.push(indo);
+                }
+
+                html += `
+        <span class="badge bg-primary d-inline-flex align-items-center me-1 mb-1"
+              style="font-size:12px; padding:4px 6px; border-radius:6px;">
+
+            <span style="margin-right:6px;">
+                ${arab}
+                <span style="color:#ddd"> | </span>
+                ${indo}
+            </span>
+
+            <span class="remove-chip"
+                  data-id="${arab}"
+                  data-indonesia="${indo}"
+                  data-select="${selectId}"
+                  style="cursor:pointer; font-weight:bold; margin-left:2px;">
+                  ×
+            </span>
+        </span>
+    `;
+            });
+
+            // Update field Indonesia dengan nilai yang terkumpul
+            if (selectId === 'kategori') {
+                $("#kategori_indonesia").val(indonesiaValues.join(', '));
+            } else if (selectId === 'sub_kategori') {
+                $("#sub_kategori_indonesia").val(indonesiaValues.join(', '));
+            }
+
+            $("#" + containerId).html(html);
+        }
+
+        // Tambahkan fungsi ini di dalam $(document).ready()
+        function updateIndonesiaField(selectId, targetFieldId) {
+            let $select = $('#' + selectId);
+            let list = $select.select2('data');
+            let indonesiaValues = [];
+
+            list.forEach(item => {
+                let indo = item.nama_indonesia || item.text?.split('|')[1]?.trim() || '';
+                if (indo) {
+                    indonesiaValues.push(indo);
+                }
+            });
+
+            $('#' + targetFieldId).val(indonesiaValues.join(', '));
+        }
+
+        $(document).ready(function() {
+
+            // Inisialisasi saat halaman dimuat
+            @if (isset($kategori))
                 // Isi input Indonesia
                 $("#kategori_indonesia").val(
                     @json($kategori).map(i => i.nama_indonesia).join(', ')
                 );
+
+                // Render selected kategori
+                renderSelected('selected_kategori', @json($kategori), 'kategori');
             @endif
 
-
             @if (isset($subKategori))
-                renderSelected('selected_sub_kategori', @json($subKategori));
-
                 $("#sub_kategori_indonesia").val(
                     @json($subKategori).map(i => i.nama_indonesia).join(', ')
                 );
-            @endif
 
+                // Render selected sub kategori
+                renderSelected('selected_sub_kategori', @json($subKategori), 'sub_kategori');
+            @endif
 
             // Inisialisasi Select2 dengan tema Bootstrap 5
             $('.select2').select2({
@@ -966,52 +1032,19 @@
             });
 
 
-            function renderSelected(containerId, dataList, selectId) {
-                let html = '';
-
-                dataList.forEach(item => {
-                    html += `
-            <span class="badge bg-primary d-inline-flex align-items-center me-1 mb-1"
-                  style="font-size:12px; padding:4px 6px; border-radius:6px;">
-
-                <span style="margin-right:6px;">
-                    ${item.nama_arab}
-                    <span style="color:#ddd"> | </span>
-                    ${item.nama_indonesia}
-                </span>
-
-                <span class="remove-chip"
-                      data-id="${item.id}"
-                      data-select="${selectId}"
-                      style="cursor:pointer; font-weight:bold; margin-left:2px;">
-                      ×
-                </span>
-            </span>
-        `;
-                });
-
-                $("#" + containerId).html(html);
-            }
+            // Ganti fungsi renderSelected yang ada dengan ini:
 
 
 
 
-            // KATEGORI
             $('#kategori').on('change', function() {
                 let list = $('#kategori').select2('data');
-
-                $("#kategori_indonesia").val(list.map(i => i.nama_indonesia).join(', '));
-
                 renderSelected('selected_kategori', list, 'kategori');
             });
 
-
-
+            // Update event handler sub kategori
             $('#sub_kategori').on('change', function() {
                 let list = $('#sub_kategori').select2('data');
-
-                $("#sub_kategori_indonesia").val(list.map(i => i.nama_indonesia).join(', '));
-
                 renderSelected('selected_sub_kategori', list, 'sub_kategori');
             });
 
@@ -1562,14 +1595,42 @@
 
         });
 
+        // Ganti event handler remove-chip dengan versi baru ini
         $(document).on('click', '.remove-chip', function() {
             let id = $(this).data('id');
-            let select = $(this).data('select');
+            let indoValue = $(this).data('indonesia');
+            let selectId = $(this).data('select');
 
-            let selected = $('#' + select).val() || [];
-            selected = selected.filter(val => val != id);
+            // Hapus dari Select2
+            let $select = $('#' + selectId);
+            let selectedValues = $select.val() || [];
 
-            $('#' + select).val(selected).trigger('change');
+            // Filter out the id to be removed
+            selectedValues = selectedValues.filter(val => val != id);
+
+            // Update Select2
+            $select.val(selectedValues).trigger('change');
+
+            // Update field Indonesia dengan cara yang lebih aman
+            let list = $select.select2('data');
+            let indonesiaValues = [];
+
+            // Kumpulkan nilai Indonesia dari item yang masih tersisa
+            list.forEach(item => {
+                let indo = item.nama_indonesia || item.text?.split('|')[1]?.trim() || '';
+                if (indo) {
+                    indonesiaValues.push(indo);
+                }
+            });
+
+            // Update field Indonesia
+            if (selectId === 'kategori') {
+                $("#kategori_indonesia").val(indonesiaValues.join(', '));
+                renderSelected('selected_kategori', list, 'kategori');
+            } else if (selectId === 'sub_kategori') {
+                $("#sub_kategori_indonesia").val(indonesiaValues.join(', '));
+                renderSelected('selected_sub_kategori', list, 'sub_kategori');
+            }
         });
     </script>
 @endpush

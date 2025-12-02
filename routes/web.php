@@ -295,6 +295,10 @@ Route::middleware(['auth'])->group(function () {
                     ->name('exportExcelProduk');
                 Route::post('/getkategoriByName', [ProdukController::class, 'getKategoriByName'])
                     ->name('getkategoriByName');
+                Route::post('/import-excel', [ProdukController::class, 'importExcel'])
+                    ->name('importExcel');
+                Route::get('/template-excel', [ProdukController::class, 'downloadTemplate'])
+                    ->name('downloadTemplate');
             });
     });
 

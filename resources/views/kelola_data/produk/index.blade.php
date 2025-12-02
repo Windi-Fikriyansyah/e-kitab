@@ -81,6 +81,11 @@
                         {{-- <a id="exportPdfBtn" class="btn btn-danger me-2">
                             <i class="fas fa-file-pdf"></i> PDF
                         </a> --}}
+                        <!-- Tombol Import -->
+                        <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                            <i class="fas fa-file-import"></i> Import Excel
+                        </button>
+
 
                         <!-- Export Excel -->
                         <a id="exportExcelBtn" class="btn btn-success me-2">
@@ -185,6 +190,7 @@
                                 <th style="display:none;">Harga Modal</th>
                                 <th>Harga Jual</th>
                                 <th>Stok</th>
+                                <th>Supplier</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -197,6 +203,40 @@
 
 
     </div>
+
+
+    <!-- Modal Import Excel -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form action="{{ route('kelola_data.produk.importExcel') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Import Data Produk</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Upload File Excel (.xlsx)</label>
+                            <input type="file" name="file" class="form-control" required accept=".xlsx">
+                            <small class="text-muted">Format harus .xlsx</small>
+                        </div>
+
+                        <a href="{{ route('kelola_data.produk.downloadTemplate') }}" class="btn btn-sm btn-link">
+                            Download Template Excel
+                        </a>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Import</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 @push('css')
@@ -426,6 +466,9 @@
                     },
                     {
                         data: 'stok',
+                    },
+                    {
+                        data: 'supplier',
                     },
                     {
                         data: 'aksi',

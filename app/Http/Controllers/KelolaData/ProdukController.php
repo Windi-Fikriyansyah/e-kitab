@@ -12,6 +12,10 @@ use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RiwayatProdukExport;
+use App\Imports\ProdukImport;
+use App\Exports\ProdukTemplateExport;
+
+
 
 
 
@@ -146,6 +150,34 @@ class ProdukController extends Controller
             ], 500);
         }
     }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        try {
+            Excel::import(new ProdukImport, $request->file('file'));
+
+            return redirect()->back()->with([
+                'message' => 'Import produk berhasil!',
+                'message_type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message' => 'Gagal import: ' . $e->getMessage(),
+                'message_type' => 'danger'
+            ]);
+        }
+    }
+
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new ProdukTemplateExport, 'template-produk.xlsx');
+    }
+
 
     private function filterProdukQuery($request)
     {
@@ -649,6 +681,7 @@ class ProdukController extends Controller
         ]);
     }
 
+
     public function store(Request $request)
     {
         // dd($request->all());
@@ -682,7 +715,6 @@ class ProdukController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
-            'judul_indonesia.required' => 'Judul produk (Indonesia) wajib diisi',
             'link_youtube.url' => 'Harus masukan dalam bentuk url',
             'kategori.required' => 'Kategori wajib dipilih',
             'sub_kategori.required' => 'Sub Kategori wajib dipilih',
@@ -762,8 +794,8 @@ class ProdukController extends Controller
             $produkData = [
                 'kd_produk' => $kd_produk,
                 'judul' => $request->judul_arab,
-                'kategori' => json_encode($request->kategori, JSON_UNESCAPED_UNICODE),
-                'sub_kategori' => json_encode($request->sub_kategori, JSON_UNESCAPED_UNICODE),
+                'kategori' => json_encode($request->kategori ?? []),
+                'sub_kategori' => json_encode($request->sub_kategori ?? []),
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -805,8 +837,8 @@ class ProdukController extends Controller
             $produkIndoData = [
                 'id_produk' => $produkId,
                 'judul_indo' => $request->judul_indonesia,
-                'kategori_indo' => json_encode(explode(',', $request->kategori_indonesia), JSON_UNESCAPED_UNICODE),
-                'sub_kategori_indo' => json_encode(explode(',', $request->sub_kategori_indonesia), JSON_UNESCAPED_UNICODE),
+                'kategori_indo' => json_encode($request->kategori_indo ?? []),
+                'sub_kategori_indo' => json_encode($request->sub_kategori_indo ?? []),
                 'penerbit_indo' => $request->penerbit_indonesia,
                 'cover_indo' => $request->cover_indonesia,
                 'kertas_indo' => $request->kertas_indonesia,
@@ -851,7 +883,7 @@ class ProdukController extends Controller
 
         $request->validate([
             'judul_arab' => 'required|string|max:255',
-            'judul_indonesia' => 'required|string|max:255',
+            'judul_indonesia' => 'nullable|string|max:255',
             'link_youtube' => 'nullable|string|url|max:255',
             'kategori' => 'nullable',
             'kategori_indonesia' => 'nullable',
@@ -979,8 +1011,8 @@ class ProdukController extends Controller
             // Siapkan data untuk update tabel produk
             $produkUpdateData = [
                 'judul' => $request->judul_arab,
-                'kategori' => json_encode($request->kategori, JSON_UNESCAPED_UNICODE),
-                'sub_kategori' => json_encode($request->sub_kategori, JSON_UNESCAPED_UNICODE),
+                'kategori' => json_encode($request->kategori ?? []),
+                'sub_kategori' => json_encode($request->sub_kategori ?? []),
                 'penerbit' => $request->penerbit,
                 'cover' => $request->cover,
                 'kertas' => $request->kertas,
@@ -1021,8 +1053,8 @@ class ProdukController extends Controller
             // Siapkan data untuk update tabel produk_indo
             $produkIndoUpdateData = [
                 'judul_indo' => $request->judul_indonesia,
-                'kategori_indo' => json_encode(explode(',', $request->kategori_indonesia), JSON_UNESCAPED_UNICODE),
-                'sub_kategori_indo' => json_encode(explode(',', $request->sub_kategori_indonesia), JSON_UNESCAPED_UNICODE),
+                'kategori_indo' => json_encode($request->kategori_indo ?? []),
+                'sub_kategori_indo' => json_encode($request->sub_kategori_indo ?? []),
                 'penerbit_indo' => $request->penerbit_indonesia,
                 'cover_indo' => $request->cover_indonesia,
                 'kertas_indo' => $request->kertas_indonesia,
@@ -1096,7 +1128,7 @@ class ProdukController extends Controller
                 $kategori[] = DB::table('kategori')
                     ->where('nama_arab', $item)
                     ->select(
-                        DB::raw("nama_arab AS id"),
+                        'id',
                         'nama_arab',
                         'nama_indonesia',
                         DB::raw("CONCAT(nama_arab,' | ',nama_indonesia) AS text")
@@ -1112,7 +1144,7 @@ class ProdukController extends Controller
                 $subKategori[] = DB::table('sub_kategori')
                     ->where('nama_arab', $item)
                     ->select(
-                        DB::raw("nama_arab AS id"),
+                        'id',
                         'nama_arab',
                         'nama_indonesia',
                         DB::raw("CONCAT(nama_arab,' | ',nama_indonesia) AS text")
