@@ -40,6 +40,7 @@ use App\Http\Controllers\Transaksi\BarangMasukController;
 use App\Http\Controllers\Transaksi\DataTransaksiController;
 use App\Http\Controllers\Transaksi\PengeluaranController;
 use App\Http\Controllers\Transaksi\TransaksiPenjualanController;
+use App\Http\Controllers\Transaksi\TransaksiSupplierController;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 
@@ -467,36 +468,23 @@ Route::middleware(['auth'])->group(function () {
 
         Route::prefix('transaksi_supplier')->as('transaksi_supplier.')
             ->group(function () {
-                Route::get('', [TransaksiPenjualanController::class, 'index'])->middleware('permission:24')->name('index');
-                Route::post('load', [TransaksiPenjualanController::class, 'load'])->middleware('permission:24')->name('load');
-                Route::get('create', [TransaksiPenjualanController::class, 'create'])->middleware('permission:24')->name('create');
-                Route::post('store', [TransaksiPenjualanController::class, 'store'])->middleware('permission:24')->name('store');
-                Route::get('edit/{id}', [TransaksiPenjualanController::class, 'edit'])->middleware('permission:24')->name('edit');
-                Route::put('update/{id}', [TransaksiPenjualanController::class, 'update'])->middleware('permission:24')->name('update');
-                Route::delete('/transaksi_penjualan/{id}', [TransaksiPenjualanController::class, 'destroy'])->middleware('permission:24')->name('destroy');
-                Route::post('/getproduk', [TransaksiPenjualanController::class, 'getproduk'])->middleware('permission:24')->name('getproduk');
-                Route::post('/getcustomer', [TransaksiPenjualanController::class, 'getcustomer'])->middleware('permission:24')->name('getcustomer');
-                Route::post('/transaksi/penjualan/simpan-customer', [TransaksiPenjualanController::class, 'simpanCustomer'])
-                    ->name('simpancustomer');
-                Route::post('/transaksi/penjualan/simpan', [TransaksiPenjualanController::class, 'simpanTransaksi'])
-                    ->name('simpan');
-                Route::get('/transaksi/penjualan/cetak-invoice/{id}', [TransaksiPenjualanController::class, 'cetakInvoice'])
-                    ->name('cetak_invoice');
-                // routes/web.php
-                Route::get('/transaksi/{id}/invoice-thermal', [TransaksiPenjualanController::class, 'cetakInvoiceThermal'])->name('invoice.thermal');
-                Route::get('/ekspedisi', [TransaksiPenjualanController::class, 'getEkspedisi'])->name('getEkspedisi');
-                Route::post('/ekspedisi', [TransaksiPenjualanController::class, 'simpanEkspedisi'])->name('simpanekspedisi');
-                Route::post('/simpan-draft', [TransaksiPenjualanController::class, 'simpanDraft'])
-                    ->name('simpanDraft');
+                Route::get('', [TransaksiSupplierController::class, 'index'])->middleware('permission:43')->name('index');
+                Route::post('load', [TransaksiSupplierController::class, 'load'])->middleware('permission:43')->name('load');
+                Route::get('create', [TransaksiSupplierController::class, 'create'])->middleware('permission:43')->name('create');
+                Route::post('store', [TransaksiSupplierController::class, 'store'])->middleware('permission:43')->name('store');
+                Route::post('/get-produk', [TransaksiSupplierController::class, 'getProduk'])
+                    ->name('getProduk');
+                Route::post('/get-produk-datatables', [TransaksiSupplierController::class, 'getProdukDT'])
+                    ->name('getProdukDT');
+                Route::get(
+                    '/detail/{id}',
+                    [TransaksiSupplierController::class, 'detail']
+                )->name('detail');
 
-                Route::get('/load-draft', [TransaksiPenjualanController::class, 'loadDraft'])
-                    ->name('load_draft');
-
-                Route::delete('/hapus-draft', [TransaksiPenjualanController::class, 'hapusDraft'])
-                    ->name('hapus_draft');
-                Route::get('/transaksi/penjualan/get-draft-list', [TransaksiPenjualanController::class, 'getDraftList'])->name('getDraftList');
-                Route::get('/transaksi/penjualan/get-draft-data', [TransaksiPenjualanController::class, 'getDraftData'])->name('getDraftData');
-                Route::delete('/transaksi/penjualan/delete-draft', [TransaksiPenjualanController::class, 'deleteDraft'])->name('deleteDraft');
+                Route::get(
+                    '/export/pdf',
+                    [TransaksiSupplierController::class, 'exportPDF']
+                )->name('exportPDF');
             });
     });
 
