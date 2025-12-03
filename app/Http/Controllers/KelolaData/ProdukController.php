@@ -526,16 +526,40 @@ class ProdukController extends Controller
             ])
             ->addIndexColumn()
             ->addColumn('aksi', function ($row) {
-                $riwayatButton = '<a href="' . route('kelola_data.produk.riwayat', Crypt::encrypt($row->id)) . '"
-                        class="btn btn-sm btn-secondary me-1"
-                        title="Riwayat Produk">
-                        <i class="fas fa-history"></i>
-                      </a>';
-                $viewButton = '<a href="' . route('kelola_data.produk.show', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-info me-1" title="Lihat Detail"><i class="fas fa-eye"></i></a>';
-                $editButton = '<a href="' . route('kelola_data.produk.edit', Crypt::encrypt($row->id)) . '" class="btn btn-sm btn-warning me-1" title="Edit Produk"><i class="fas fa-edit"></i></a>';
-                $barcodeButton = '<button class="btn btn-sm btn-primary me-1 barcode-btn" data-kd="' . $row->kd_produk . '" data-judul="' . $row->judul . '"><i class="fas fa-barcode"></i></button>';
-                $deleteButton = '<button class="btn btn-sm btn-danger delete-btn" data-url="' . route('kelola_data.produk.destroy', Crypt::encrypt($row->id)) . '"><i class="fas fa-trash-alt"></i></button>';
-                return $riwayatButton . $viewButton . $editButton . $barcodeButton . $deleteButton;
+                return '<div class="aksi-btn-group">
+
+                <a href="' . route('kelola_data.produk.riwayat', Crypt::encrypt($row->id)) . '"
+                    class="btn btn-secondary btn-action-xs"
+                    title="Riwayat Produk">
+                    <i class="fas fa-history"></i>
+                </a>
+
+                <a href="' . route('kelola_data.produk.show', Crypt::encrypt($row->id)) . '"
+                    class="btn btn-info btn-action-xs"
+                    title="Lihat Detail">
+                    <i class="fas fa-eye"></i>
+                </a>
+
+                <a href="' . route('kelola_data.produk.edit', Crypt::encrypt($row->id)) . '"
+                    class="btn btn-warning btn-action-xs"
+                    title="Edit Produk">
+                    <i class="fas fa-edit"></i>
+                </a>
+
+                <button class="btn btn-primary btn-action-xs barcode-btn"
+                    data-kd="' . $row->kd_produk . '"
+                    data-judul="' . $row->judul . '"
+                    title="Barcode">
+                    <i class="fas fa-barcode"></i>
+                </button>
+
+                <button class="btn btn-danger btn-action-xs delete-btn"
+                    data-url="' . route('kelola_data.produk.destroy', Crypt::encrypt($row->id)) . '"
+                    title="Hapus">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+
+            </div>';
             })
             ->rawColumns(['aksi', 'images'])
             ->make(true);

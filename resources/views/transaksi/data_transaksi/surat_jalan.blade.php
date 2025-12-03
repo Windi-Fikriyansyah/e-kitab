@@ -318,6 +318,9 @@
                     <th width="15%">الطبعة<br>Cetakan</th>
                     <th width="8%">الكمية<br>Qty</th>
                     <th width="12%">سعر<br>Harga</th>
+                    @if ($items->sum('diskon_produk') > 0)
+                        <th width="12%">سعر<br>Diskon</th>
+                    @endif
                     <th width="10%">الإجمالي<br>Total</th>
                 </tr>
             </thead>
@@ -330,6 +333,15 @@
                         <td class="text-left">{{ $item->penerbit ?? '-' }}</td>
                         <td>{{ $item->quantity }}</td>
                         <td class="text-right">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                        @if ($items->sum('diskon_produk') > 0)
+                            <td class="text-right">
+                                @if ($item->diskon_produk > 0)
+                                    {{ intval($item->diskon_produk) }}%
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        @endif
                         <td class="text-right">Rp {{ number_format($item->total_price, 0, ',', '.') }}</td>
                     </tr>
                 @endforeach

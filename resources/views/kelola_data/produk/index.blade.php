@@ -239,9 +239,23 @@
 
 @endsection
 
-@push('css')
+@push('style')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
+        /* Container tombol aksi */
+        .aksi-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        /* Tombol ukuran kecil agar muat di HP */
+        .btn-action-xs {
+            padding: 4px 6px !important;
+            font-size: 11px !important;
+        }
+
         .right-gap {
             margin-right: 10px
         }
@@ -472,8 +486,8 @@
                     },
                     {
                         data: 'aksi',
-                        className: 'text-center text-nowrap',
-                        width: "180px"
+                        className: 'text-center',
+                        width: "120px"
                     }
                 ],
                 drawCallback: function(settings) {

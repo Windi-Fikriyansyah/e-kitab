@@ -91,10 +91,11 @@
             display: inline-block;
         }
 
-        /* Sembunyikan kolom harga custom secara default */
         .custom-price-header,
-        .custom-price-cell {
-            display: none;
+        .custom-price-cell,
+        .diskon-produk-header,
+        .diskon-produk-cell {
+            display: table-cell;
         }
 
         /* Tampilkan kolom harga custom saat mode dropship aktif */
@@ -142,24 +143,40 @@
         .table th:nth-child(6),
         .table td:nth-child(6) {
             width: 12%;
+            /* Harga Custom */
         }
 
-        /* Harga Custom */
         .table th:nth-child(7),
         .table td:nth-child(7) {
-            width: 8%;
+            width: 12%;
+            /* Diskon Produk */
         }
 
-        /* Qty */
         .table th:nth-child(8),
         .table td:nth-child(8) {
-            width: 10%;
+            width: 8%;
+            /* Qty */
         }
 
-        /* Subtotal */
         .table th:nth-child(9),
         .table td:nth-child(9) {
+            width: 12%;
+            /* Subtotal */
+        }
+
+        .table th:nth-child(10),
+        .table td:nth-child(10) {
             width: 5%;
+            /* Aksi */
+        }
+
+        .diskon-produk-input {
+            width: 100%;
+        }
+
+        /* Input untuk harga custom */
+        .custom-price-input {
+            width: 100%;
         }
 
         #potongan-input-container {
@@ -245,6 +262,7 @@
                                         <th>Supplier</th>
                                         <th>Harga</th>
                                         <th class="custom-price-header">Harga Custom</th>
+                                        <th class="diskon-produk-header">Diskon Produk</th>
                                         <th>Qty</th>
                                         <th>Subtotal</th>
                                         <th>Aksi</th>
@@ -847,6 +865,8 @@
 
     <script>
         $(document).ready(function() {
+            $('.custom-price-input').prop('disabled', false);
+            $('.diskon-produk-input').prop('disabled', false);
 
             // Variabel global untuk menyimpan data draft yang sedang diproses
             var currentDraftData = null;
@@ -1029,6 +1049,10 @@
                         }, 300);
                     }
 
+                    if (transaksi.diskon_produk) {
+                        // Jika ada diskon produk global, atur nilai default
+                        $('#diskon-persen').val(transaksi.diskon_produk);
+                    }
                     // 6. SET NILAI NUMERIK
                     if (transaksi.ongkir) $('#ongkir').val(formatRupiahDraft(transaksi.ongkir));
                     if (transaksi.packing_kayu) $('#packing_kayu').val(formatRupiahDraft(transaksi.packing_kayu));
@@ -1077,10 +1101,6 @@
                 $('#cart_table').empty();
 
                 items.forEach(function(item, index) {
-                    // Debug: console log untuk melihat struktur data
-                    console.log('Item data:', item);
-
-                    // Gunakan data yang tersedia dengan fallback
                     var produkId = item.produk?.id || item.id || index + 1;
                     var kodeProduk = item.kd_produk || '';
                     var judul = item.produk?.judul || item.judul || 'Produk Tidak Ditemukan';
@@ -1091,6 +1111,9 @@
                     var totalPrice = item.total_price || (unitPrice * quantity);
                     var stok = item.produk?.stok || item.stok || 0;
 
+                    // Ambil diskon produk dari data draft jika ada
+                    var diskonProduk = item.diskon_produk || 0;
+
                     var newRow = '<tr data-id="' + produkId + '">' +
                         '<td>' + (index + 1) + '</td>' +
                         '<td>' + kodeProduk + '</td>' +
@@ -1098,8 +1121,19 @@
                         '<td>' + supplier + '</td>' +
                         '<td class="harga-asli" data-value="' + originalPrice + '">' +
                         formatRupiahDraft(originalPrice) + '</td>' +
-                        '<td class="custom-price-cell"><input type="text" class="form-control custom-price-input" value="' +
-                        formatRupiahDraft(unitPrice) + '" style="width: 100%;"></td>' +
+                        '<td class="custom-price-cell">' +
+                        '<input type="text" class="form-control custom-price-input" value="' +
+                        formatRupiahDraft(unitPrice) + '" style="width: 100%;">' +
+                        '</td>' +
+                        '<td class="diskon-produk-cell">' +
+                        '<div class="input-group">' +
+                        '<input type="text" class="form-control diskon-produk-input" value="' +
+                        diskonProduk + '" style="width: 80%;">' +
+                        '<div class="input-group-append">' +
+                        '<span class="input-group-text">%</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '</td>' +
                         '<td>' +
                         '<input type="number" class="form-control qty-input" value="' + quantity +
                         '" min="1" style="width: 70px;">' +
@@ -1191,6 +1225,12 @@
                 $('.remove-item').off('click').on('click', function() {
                     $(this).closest('tr').remove();
                     updateRowNumbers();
+                    updateGrandTotal();
+                    syncBayarDenganTotal();
+                });
+
+                $('.diskon-produk-input').off('change').on('change', function() {
+                    updateSubtotal($(this).closest('tr'));
                     updateGrandTotal();
                     syncBayarDenganTotal();
                 });
@@ -1574,7 +1614,9 @@
                         unit_price: parseRupiah($('#dropship-mode').is(':checked') ?
                             row.find('.custom-price-input').val() :
                             row.find('.harga-asli').text()),
-                        original_price: parseRupiah(row.find('.harga-asli').text())
+                        original_price: parseRupiah(row.find('.harga-asli').text()),
+                        diskon_produk: parseFloat(row.find('.diskon-produk-input').val()) ||
+                            0
                     });
                 });
 
@@ -1805,29 +1847,29 @@
                 calculateKembalian();
             }
 
-            $('#dropship-mode').on('change', function() {
-                if ($(this).is(':checked')) {
-                    $('body').addClass('dropship-mode');
-                    $('.custom-price-input').prop('disabled', false);
-                    toastr.info('Mode Dropship aktif - Anda dapat mengatur harga custom', 'Info');
-                } else {
-                    $('body').removeClass('dropship-mode');
-                    $('.custom-price-input').prop('disabled', true);
+            // $('#dropship-mode').on('change', function() {
+            //     if ($(this).is(':checked')) {
+            //         $('body').addClass('dropship-mode');
+            //         $('.custom-price-input').prop('disabled', false);
+            //         toastr.info('Mode Dropship aktif - Anda dapat mengatur harga custom', 'Info');
+            //     } else {
+            //         $('body').removeClass('dropship-mode');
+            //         $('.custom-price-input').prop('disabled', true);
 
-                    // Reset semua harga custom ke harga asli
-                    $('#cart_table tr').each(function() {
-                        var row = $(this);
-                        var hargaAsli = parseRupiah(row.find('.harga-asli').text());
-                        row.find('.custom-price-input').val(hargaAsli);
-                        updateSubtotal(row);
-                    });
+            //         // Reset semua harga custom ke harga asli
+            //         $('#cart_table tr').each(function() {
+            //             var row = $(this);
+            //             var hargaAsli = parseRupiah(row.find('.harga-asli').text());
+            //             row.find('.custom-price-input').val(hargaAsli);
+            //             updateSubtotal(row);
+            //         });
 
-                    updateGrandTotal();
-                    syncBayarDenganTotal();
+            //         updateGrandTotal();
+            //         syncBayarDenganTotal();
 
-                    toastr.info('Mode Dropship dinonaktifkan - Harga kembali ke harga asli', 'Info');
-                }
-            });
+            //         toastr.info('Mode Dropship dinonaktifkan - Harga kembali ke harga asli', 'Info');
+            //     }
+            // });
 
             $('#customer').on('change', function() {
                 var selectedCustomer = $(this).select2('data')[0];
@@ -2409,12 +2451,21 @@
                             '<td>' + product.supplier + '</td>' +
                             '<td class="harga-asli" data-value="' + product.harga_jual + '">' +
                             formatRupiah(product.harga_jual) + '</td>' +
-                            '<td class="custom-price-cell"><input type="text" class="form-control custom-price-input" value="' +
-                            formatRupiah(product.harga_jual) + '" style="width: 100%;"></td>' +
+                            '<td class="custom-price-cell">' +
+                            '<input type="text" class="form-control custom-price-input" value="' +
+                            formatRupiah(product.harga_jual) + '" style="width: 100%;">' +
+                            '</td>' +
+                            '<td class="diskon-produk-cell">' +
+                            '<div class="input-group">' +
+                            '<input type="text" class="form-control diskon-produk-input" value="0" style="width: 80%;">' +
+                            '<div class="input-group-append">' +
+                            '<span class="input-group-text">%</span>' +
+                            '</div>' +
+                            '</div>' +
+                            '</td>' +
                             '<td>' +
                             '<input type="number" class="form-control qty-input" value="1" min="1" style="width: 70px;">' +
                             '<span class="stok" style="display:none;">' + product.stok + '</span>' +
-                            // Add hidden stock info
                             '</td>' +
                             '<td class="subtotal">' + formatRupiah(product.harga_jual) + '</td>' +
                             '<td><button type="button" class="btn btn-danger btn-sm remove-item"><i class="fa fa-trash"></i></button></td>' +
@@ -2426,27 +2477,33 @@
                 updateGrandTotal();
                 syncBayarDenganTotal();
 
-
-                $('.qty-input').off('change').on('change', function() {
+                // Event handler untuk diskon produk
+                $('.diskon-produk-input').off('change').on('change', function() {
                     updateSubtotal($(this).closest('tr'));
                     updateGrandTotal();
                     syncBayarDenganTotal();
-
                 });
 
+                // Event handler untuk harga custom
                 $('.custom-price-input').off('change').on('change', function() {
                     updateSubtotal($(this).closest('tr'));
                     updateGrandTotal();
                     syncBayarDenganTotal();
-
                 });
 
+                // Event handler untuk qty
+                $('.qty-input').off('change').on('change', function() {
+                    updateSubtotal($(this).closest('tr'));
+                    updateGrandTotal();
+                    syncBayarDenganTotal();
+                });
+
+                // Event handler untuk hapus item
                 $('.remove-item').off('click').on('click', function() {
                     $(this).closest('tr').remove();
                     updateRowNumbers();
                     updateGrandTotal();
                     syncBayarDenganTotal();
-
                 });
             }
             // Event handler untuk input Rupiah
@@ -2485,17 +2542,29 @@
             }
 
             function updateSubtotal(row) {
-                var harga = 0;
-                if ($('#dropship-mode').is(':checked')) {
-                    var hargaInput = row.find('.custom-price-input').val();
-                    harga = parseRupiah(hargaInput) || 0;
-                } else {
-                    harga = parseRupiah(row.find('.harga-asli').text());
-                }
+                var hargaAsli = parseRupiah(row.find('.harga-asli').text());
+                var hargaCustom = parseRupiah(row.find('.custom-price-input').val()) || hargaAsli;
+
+                // Gunakan harga custom atau harga asli berdasarkan mode
+                var harga = hargaCustom;
 
                 var qty = parseInt(row.find('.qty-input').val()) || 0;
                 var stok = parseInt(row.find('.stok').text()) || 0;
 
+                // Validasi diskon produk
+                var diskonProduk = parseFloat(row.find('.diskon-produk-input').val()) || 0;
+                if (diskonProduk < 0) {
+                    diskonProduk = 0;
+                    row.find('.diskon-produk-input').val(0);
+                } else if (diskonProduk > 100) {
+                    diskonProduk = 100;
+                    row.find('.diskon-produk-input').val(100);
+                }
+
+                // Hitung harga setelah diskon produk
+                var hargaSetelahDiskon = harga - (harga * diskonProduk / 100);
+
+                // Validasi stok
                 if (qty > stok) {
                     row.addClass('bg-danger text-white');
                     toastr.error('Quantity melebihi stok yang tersedia (' + stok + ')', 'Error!');
@@ -2505,9 +2574,31 @@
                     row.removeClass('bg-danger text-white');
                 }
 
-                var subtotal = harga * qty;
+                var subtotal = hargaSetelahDiskon * qty;
                 row.find('.subtotal').text(formatRupiah(subtotal));
             }
+
+            // Event handler untuk input diskon produk
+            $(document).on('keyup', '.diskon-produk-input', function(e) {
+                var value = parseFloat($(this).val()) || 0;
+                if (value < 0) {
+                    $(this).val(0);
+                } else if (value > 100) {
+                    $(this).val(100);
+                }
+                updateSubtotal($(this).closest('tr'));
+                updateGrandTotal();
+                syncBayarDenganTotal();
+            });
+
+            // Event handler saat input kehilangan fokus
+            $(document).on('blur', '.diskon-produk-input', function() {
+                var value = parseFloat($(this).val()) || 0;
+                $(this).val(value);
+                updateSubtotal($(this).closest('tr'));
+                updateGrandTotal();
+                syncBayarDenganTotal();
+            });
 
             $('#potongan-check').change(function() {
                 if ($(this).is(':checked')) {

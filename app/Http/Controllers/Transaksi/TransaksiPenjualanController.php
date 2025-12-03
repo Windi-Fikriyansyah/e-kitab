@@ -118,9 +118,34 @@ class TransaksiPenjualanController extends Controller
             // Get customer data
             $customer = $request->customer ? DB::table('customer')->where('id', $request->customer)->first() : null;
 
+            $totalItems = 0;
+            foreach ($request->items as $item) {
+                $diskonProduk = $item['diskon_produk'] ?? 0;
+                $hargaSetelahDiskonProduk = $item['unit_price'];
+
+                if ($diskonProduk > 0 && $diskonProduk <= 100) {
+                    $hargaSetelahDiskonProduk = $item['unit_price'] * (1 - ($diskonProduk / 100));
+                }
+
+                $totalItems += $hargaSetelahDiskonProduk * $item['quantity'];
+            }
+
+            // Hitung total akhir dengan potongan, diskon, ongkir, dll
+            $subtotal = $request->subtotal ?? $totalItems;
+            $potongan = $request->potongan ?? 0;
+            $diskonPersen = $request->diskon_persen ?? 0;
+            $ongkir = $request->ongkir ?? 0;
+            $packingKayu = $request->packing_kayu ?? 0;
+
+            // Hitung diskon nominal dari persentase
+            $diskonNominal = ($subtotal - $potongan) * ($diskonPersen / 100);
+
+            // Total akhir
+            $totalAkhir = $subtotal - $potongan - $diskonNominal + $ongkir + $packingKayu;
+
             // Untuk draft, TIDAK mengurangi stok dan deposit
             $usedDeposit = 0;
-            $remainingAmount = $request->total ?? 0;
+            $remainingAmount = $totalAkhir;
 
             $transaksiData = [
                 'kode_transaksi' => $kodeTransaksi,
@@ -169,14 +194,24 @@ class TransaksiPenjualanController extends Controller
 
             // Simpan item transaksi DRAFT
             foreach ($request->items as $item) {
+                $diskonProduk = $item['diskon_produk'] ?? 0;
+                $hargaSetelahDiskonProduk = $item['unit_price'];
+
+                if ($diskonProduk > 0 && $diskonProduk <= 100) {
+                    $hargaSetelahDiskonProduk = $item['unit_price'] * (1 - ($diskonProduk / 100));
+                }
+
+                // Hitung total harga setelah diskon produk
+                $totalHargaSetelahDiskon = $hargaSetelahDiskonProduk * $item['quantity'];
                 DB::table('transaksi_items')->insert([
                     'id_transaksi' => $transaksiId,
                     'kd_produk' => $item['kd_produk'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'original_price' => $item['original_price'],
+                    'diskon_produk' => $diskonProduk,
                     'is_custom_price' => $item['unit_price'] != $item['original_price'],
-                    'total_price' => $item['quantity'] * $item['unit_price'],
+                    'total_price' => $totalHargaSetelahDiskon,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -489,6 +524,7 @@ class TransaksiPenjualanController extends Controller
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.unit_price' => 'required|numeric|min:0',
                 'items.*.original_price' => 'required|numeric|min:0',
+                'items.*.diskon_produk' => 'nullable|numeric|min:0|max:100',
                 'subtotal' => 'required|numeric|min:0',
                 'diskon_persen' => 'numeric|min:0',
                 'total' => 'required|numeric|min:0',
@@ -648,14 +684,26 @@ class TransaksiPenjualanController extends Controller
 
             // Simpan item transaksi
             foreach ($request->items as $item) {
+                $hargaSetelahDiskonProduk = $item['unit_price'];
+
+                // Jika ada diskon produk, hitung harga setelah diskon
+                $diskonProduk = $item['diskon_produk'] ?? 0;
+                if ($diskonProduk > 0 && $diskonProduk <= 100) {
+                    $hargaSetelahDiskonProduk = $item['unit_price'] * (1 - ($diskonProduk / 100));
+                }
+
+                // Hitung total harga setelah diskon produk
+                $totalHargaSetelahDiskon = $hargaSetelahDiskonProduk * $item['quantity'];
                 DB::table('transaksi_items')->insert([
                     'id_transaksi' => $transaksiId,
                     'kd_produk' => $item['kd_produk'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'original_price' => $item['original_price'],
+                    'diskon_produk' => $diskonProduk,
+                    'harga_setelah_diskon_produk' => $hargaSetelahDiskonProduk,
                     'is_custom_price' => $item['unit_price'] != $item['original_price'],
-                    'total_price' => $item['quantity'] * $item['unit_price'],
+                    'total_price' => $totalHargaSetelahDiskon,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
