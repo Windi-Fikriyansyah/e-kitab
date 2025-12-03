@@ -10,6 +10,15 @@ use Carbon\Carbon;
 
 class LaporanStokController extends Controller
 {
+    private function parseKategori($kategori)
+    {
+        $decoded = json_decode($kategori, true);
+        if (is_array($decoded)) {
+            return implode(', ', $decoded);
+        }
+        return $kategori;
+    }
+
     public function index()
     {
         // Data untuk filter mutasi stok
@@ -38,6 +47,9 @@ class LaporanStokController extends Controller
                 ->select('id', 'kd_produk', 'judul', 'stok', 'kategori');
 
             return DataTables::of($query)
+                ->editColumn('kategori', function ($item) {
+                    return $this->parseKategori($item->kategori);
+                })
                 ->addColumn('status', function ($item) {
                     if ($item->stok < 10) {
                         return '<span class="badge bg-danger">Perlu Restock</span>';
@@ -56,6 +68,9 @@ class LaporanStokController extends Controller
                 ->where('stok', '<', 10);
 
             return DataTables::of($query)
+                ->editColumn('kategori', function ($item) {
+                    return $this->parseKategori($item->kategori);
+                })
                 ->addColumn('stok_minimum', function () {
                     return 10; // Default stok minimum
                 })

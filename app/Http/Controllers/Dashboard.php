@@ -11,8 +11,21 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 
 
+
 class Dashboard extends Controller
 {
+    private function parseKategori($kategori)
+    {
+        $decoded = json_decode($kategori, true);
+
+        if (is_array($decoded)) {
+            return implode(', ', $decoded);
+        }
+
+        return $kategori;
+    }
+
+
     public function index(Request $request)
     {
         // Mengambil tipe user yang sedang login
@@ -112,7 +125,18 @@ class Dashboard extends Controller
             )
             ->orderByDesc('total_sold')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                // Decode JSON kategori
+                $kategori = json_decode($item->kategori, true);
+
+                // Jika kategori adalah array → gabungkan dengan koma
+                if (is_array($kategori)) {
+                    $item->kategori = implode(', ', $kategori);
+                }
+
+                return $item;
+            });
 
         $lowStockItems = DB::table('produk')
             ->where('stok', '<', 10)
@@ -160,6 +184,9 @@ class Dashboard extends Controller
 
             return DataTables::of($data)
                 ->addIndexColumn()
+                ->editColumn('kategori', function ($row) {
+                    return $this->parseKategori($row->kategori);
+                })
                 ->editColumn('harga_jual', fn($row) => 'Rp ' . number_format($row->harga_jual, 0, ',', '.'))
                 ->make(true);
         }
@@ -193,7 +220,12 @@ class Dashboard extends Controller
                 ->orderByDesc('usia_stok')
                 ->get();
 
-            return DataTables::of($data)->addIndexColumn()->make(true);
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->editColumn('kategori', function ($row) {
+                    return $this->parseKategori($row->kategori);
+                })
+                ->make(true);
         }
     }
 
@@ -252,6 +284,9 @@ class Dashboard extends Controller
 
             return DataTables::of($data)
                 ->addIndexColumn()
+                ->editColumn('kategori', function ($row) {
+                    return $this->parseKategori($row->kategori);
+                })
                 ->editColumn('harga_modal', fn($row) => 'Rp ' . number_format($row->harga_modal, 0, ',', '.'))
                 ->editColumn('harga_jual', fn($row) => 'Rp ' . number_format($row->harga_jual, 0, ',', '.'))
                 ->make(true);
