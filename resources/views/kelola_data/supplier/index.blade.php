@@ -28,6 +28,7 @@
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>ID</th>
                                 <th>Nama Supplier</th>
                                 <th>Alamat</th>
                                 <th>No Telepon</th>
@@ -76,6 +77,10 @@
                         orderable: false,
                         searchable: false,
                         width: '5%'
+                    },
+                    {
+                        data: 'id',
+                        className: 'text-center',
                     },
                     {
                         data: 'nama_supplier',
