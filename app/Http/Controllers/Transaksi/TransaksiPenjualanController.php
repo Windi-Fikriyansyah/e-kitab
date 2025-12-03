@@ -68,6 +68,7 @@ class TransaksiPenjualanController extends Controller
 
     public function simpanDraft(Request $request)
     {
+
         DB::beginTransaction();
         try {
             // VALIDASI SANGAT RINGAN UNTUK DRAFT
@@ -78,6 +79,7 @@ class TransaksiPenjualanController extends Controller
                 'items.*.quantity' => 'required|integer|min:0',
                 'items.*.unit_price' => 'required|numeric|min:0',
                 'items.*.original_price' => 'required|numeric|min:0',
+                'items.*.diskon_produk' => 'nullable|numeric|min:0|max:100',
             ]);
 
             // CEK APAKAH ADA DRAFT_ID UNTUK UPDATE
@@ -299,6 +301,7 @@ class TransaksiPenjualanController extends Controller
                     'ti.original_price',
                     'ti.total_price',
                     'ti.is_custom_price',
+                    'ti.diskon_produk',
                     'p.id as produk_id',
                     'p.judul',
                     'p.penulis',
@@ -319,6 +322,7 @@ class TransaksiPenjualanController extends Controller
                     'unit_price' => $item->unit_price,
                     'original_price' => $item->original_price,
                     'total_price' => $item->total_price,
+                    'diskon_produk' => $item->diskon_produk,
                     'is_custom_price' => $item->is_custom_price,
                     'produk' => [
                         'id' => $item->produk_id,

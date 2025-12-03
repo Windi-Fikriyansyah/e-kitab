@@ -1971,7 +1971,9 @@
                         quantity: quantity,
                         unit_price: $('#dropship-mode').is(':checked') ? hargaCustom :
                             hargaAsli,
-                        original_price: hargaAsli
+                        original_price: hargaAsli,
+                        diskon_produk: parseFloat(row.find('.diskon-produk-input').val()) ||
+                            0
                     });
                 });
 
