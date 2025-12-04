@@ -51,24 +51,27 @@
                         </button>
                     </div>
                 </div>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body p-2">
-                                <h6 class="mb-0">Total Quantity Terjual: <span id="total-qty" class="fw-bold">0</span>
-                                </h6>
+                @if (auth()->user()->role == 1)
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-0">Total Quantity Terjual: <span id="total-qty" class="fw-bold">0</span>
+                                    </h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-0">Total Nilai Terjual: <span id="total-nilai" class="fw-bold">Rp
+                                            0</span>
+                                    </h6>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body p-2">
-                                <h6 class="mb-0">Total Nilai Terjual: <span id="total-nilai" class="fw-bold">Rp 0</span>
-                                </h6>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @endif
             </div>
 
             <div class="card-body">

@@ -99,6 +99,7 @@
                                 <th>Pilih</th>
                                 <th>Judul</th>
                                 <th>Harga</th>
+                                <th>Stok</th>
                             </tr>
                         </thead>
                     </table>
@@ -177,7 +178,10 @@
                             // format ke rupiah
                             return 'Rp ' + parseInt(data).toLocaleString('id-ID');
                         }
-                    }
+                    },
+                    {
+                        data: 'stok'
+                    },
                 ]
             });
         });

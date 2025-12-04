@@ -49,10 +49,7 @@ class Dashboard extends Controller
             ->where('payment_status', 'lunas')
             ->whereDate('created_at', now()->toDateString())
             ->sum('total');
-        $dailyFeeSupplier = DB::table('transaksi_supplier')
-            ->whereDate('created_at', today())
-            ->sum('fee');
-        $dailyIncome += $dailyFeeSupplier;
+
 
         // Omset per bulan (bulan ini)
         $monthlyIncome = DB::table('transaksi')
@@ -60,12 +57,7 @@ class Dashboard extends Controller
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
-        $monthlyFeeSupplier = DB::table('transaksi_supplier')
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->sum('fee');
 
-        $monthlyIncome += $monthlyFeeSupplier;
         $dailyPengeluaran = DB::table('pengeluaran')
             ->whereDate('tanggal', today())
             ->sum('nominal');

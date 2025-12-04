@@ -49,8 +49,8 @@
                 <td>{{ $t->nama_supplier }}</td>
             </tr>
             <tr>
-                <th>Total</th>
-                <td>Rp {{ number_format($t->total, 0, ',', '.') }}</td>
+                <th>Total Tagihan</th>
+                <td>Rp {{ number_format($t->total_tagihan, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <th>Resi</th>

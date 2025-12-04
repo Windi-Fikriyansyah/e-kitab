@@ -35,6 +35,7 @@ class TransaksiSupplierController extends Controller
                 't.total',
                 't.fee',
                 't.id_supplier',
+                't.total_tagihan',
                 's.nama_supplier',
                 't.created_at'
             ]);
@@ -52,7 +53,7 @@ class TransaksiSupplierController extends Controller
                     $q->where(function ($w) use ($search) {
                         $w->whereRaw('LOWER(t.kode_transaksi) LIKE ?', ["%$search%"])
                             ->orWhereRaw('LOWER(s.nama_supplier) LIKE ?', ["%$search%"])
-                            ->orWhereRaw('LOWER(t.total) LIKE ?', ["%$search%"])
+                            ->orWhereRaw('LOWER(t.total_tagihan) LIKE ?', ["%$search%"])
                             ->orWhereRaw('LOWER(t.resi) LIKE ?', ["%$search%"])
                             ->orWhereRaw('LOWER(t.fee) LIKE ?', ["%$search%"]);
                     });
@@ -96,7 +97,7 @@ class TransaksiSupplierController extends Controller
     {
         $query = DB::table('produk as p')
             ->where('p.supplier', $request->id_supplier)
-            ->select(['p.id', 'p.judul', 'p.harga_modal']);
+            ->select(['p.id', 'p.judul', 'p.harga_modal', 'p.stok']);
 
         return DataTables::of($query)
             ->addColumn('checkbox', function ($row) {
@@ -133,6 +134,7 @@ class TransaksiSupplierController extends Controller
     public function store(Request $request)
     {
 
+
         DB::beginTransaction();
 
         try {
@@ -144,6 +146,7 @@ class TransaksiSupplierController extends Controller
             $resi  = $request->resi;
             $fee   = $request->fee;
 
+            $total_tagihan = $total - $fee - $resi;
             // Produk JSON
             $produk = json_decode($request->produk, true);
 
@@ -161,6 +164,7 @@ class TransaksiSupplierController extends Controller
                 'total'          => $total,
                 'resi'           => $resi,
                 'fee'            => $fee,
+                'total_tagihan'  => $total_tagihan,
                 'created_at'     => now(),
                 'updated_at'     => now(),
             ]);
@@ -182,6 +186,56 @@ class TransaksiSupplierController extends Controller
                     ->where('id', $p['id'])
                     ->decrement('stok', $p['qty']);
             }
+
+
+            $total_biaya     = $fee + $resi;
+
+
+            $idTransaksiUtama = DB::table('transaksi')->insertGetId([
+                'kode_transaksi'   => $kodeTransaksi,
+
+                'id_customer'      => null,
+                'nama_customer'    => null,
+                'no_hp_customer'   => null,
+                'alamat_customer'  => null,
+
+                'payment_method'   => 'cash',
+                'payment_status'   => 'lunas',
+
+                'ekspedisi'        => null,
+                'ekspedisi_lain'   => null,
+
+                // ========== PERHITUNGAN ==========
+                'subtotal'         => $total_biaya,            // total harga produk
+                'discount'         => 0,
+                'potongan'         => 0,
+                'total'            => $total_biaya,    // sesuai permintaan
+                'paid_amount'      => $total_biaya,
+                'remaining_amount' => 0,
+                'change_amount'    => 0,
+
+                'notes'            => 'Transaksi supplier otomatis',
+                'kasir'            => auth()->user()->id ?? 'system',
+
+                'is_dropship'        => 0,
+                'nama_pengirim'      => null,
+                'telepon_pengirim'   => null,
+                'alamat_pengirim'    => null,
+                'nama_penerima'      => null,
+                'telepon_penerima'   => null,
+                'alamat_penerima'    => null,
+
+                'channel_order'    => 'Supplier',
+                'ongkir'           => 0,
+                'packing_kayu'     => 0,
+                'status_transaksi' => 'selesai',
+
+                'id_transaksi_supplier'      => $id_transaksi,
+
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ]);
+
 
             DB::commit();
 

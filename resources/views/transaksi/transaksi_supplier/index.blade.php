@@ -52,7 +52,7 @@
 
                                 <th>Kode Transaksi</th>
                                 <th>Supplier</th>
-                                <th>Total</th>
+                                <th>Total Tagihan</th>
                                 <th>Resi</th>
                                 <th>Fee</th>
                                 <th>Aksi</th>
@@ -101,6 +101,10 @@
                         <tr>
                             <th>Fee</th>
                             <td id="d_fee"></td>
+                        </tr>
+                        <tr>
+                            <th>Total Tagihan</th>
+                            <td id="d_total_tagihan"></td>
                         </tr>
                     </table>
 
@@ -200,7 +204,7 @@
 
                     // FORMAT TOTAL
                     {
-                        data: 'total',
+                        data: 'total_tagihan',
                         render: function(data) {
                             return formatRupiah(data);
                         }
@@ -334,6 +338,7 @@
                     $("#d_total").text(formatRupiah(res.transaksi.total));
                     $("#d_resi").text(formatRupiah(res.transaksi.resi));
                     $("#d_fee").text(formatRupiah(res.transaksi.fee));
+                    $("#d_total_tagihan").text(formatRupiah(res.transaksi.total_tagihan));
 
                     // DETAIL PRODUK
                     let html = "";

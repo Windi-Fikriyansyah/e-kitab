@@ -43,23 +43,25 @@
                     </div>
                 </div>
 
-                <div class="row mt-3">
-                    <div class="col-md-12">
-                        <div class="card bg-light">
-                            <div class="card-body p-2 text-center">
-                                <h6 class="mb-1">Total Pengeluaran:
-                                    <span id="total-nominal" class="fw-bold text-danger">Rp 0</span>
-                                </h6>
-                                <h6 class="mb-1">Total Pemasukan:
-                                    <span id="total-pemasukan" class="fw-bold text-success">Rp 0</span>
-                                </h6>
-                                <h6 class="mb-0">Laba Rugi:
-                                    <span id="total-laba-rugi" class="fw-bold text-primary">Rp 0</span>
-                                </h6>
+                @if (auth()->user()->role == 1)
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body p-2 text-center">
+                                    <h6 class="mb-1">Total Pengeluaran:
+                                        <span id="total-nominal" class="fw-bold text-danger">Rp 0</span>
+                                    </h6>
+                                    <h6 class="mb-1">Total Pemasukan:
+                                        <span id="total-pemasukan" class="fw-bold text-success">Rp 0</span>
+                                    </h6>
+                                    <h6 class="mb-0">Laba Rugi:
+                                        <span id="total-laba-rugi" class="fw-bold text-primary">Rp 0</span>
+                                    </h6>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @endif
 
             </div>
 
