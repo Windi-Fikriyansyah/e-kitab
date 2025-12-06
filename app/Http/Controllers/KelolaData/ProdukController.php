@@ -883,6 +883,19 @@ class ProdukController extends Controller
 
             DB::commit();
 
+            if ($request->has('save_and_transaction') && $request->save_and_transaction == '1') {
+                // Redirect ke halaman transaksi dengan membuka modal produk
+                return redirect()->route('transaksi.transaksi_penjualan.index')
+                    ->with([
+                        'message' => 'Produk berhasil ditambahkan',
+                        'message_type' => 'success',
+                        'message_title' => 'Sukses',
+                        'open_product_modal' => true, // Flag untuk membuka modal
+                        'new_product_id' => $produkId // ID produk baru
+                    ]);
+            }
+
+
             return redirect()->route('kelola_data.produk.index')
                 ->with([
                     'message' => 'Produk berhasil ditambahkan',

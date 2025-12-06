@@ -716,9 +716,16 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">Data Produk</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
+                    <div class="modal-header-actions ml-auto">
+                        <a href="{{ route('kelola_data.produk.create') }}" class="btn btn-success btn-sm mr-2"
+                            title="Tambah Produk Baru">
+                            <i class="fas fa-plus"></i> Tambah Produk
+                        </a>
+
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     <table id="produk-table" class="table table-bordered table-hover" style="width:100%">
@@ -865,6 +872,41 @@
 
     <script>
         $(document).ready(function() {
+            @if (session('open_product_modal') && session('new_product_id'))
+                toastr.success('{{ session('message') }}', '{{ session('message_title') }}');
+
+                // Buka modal produk setelah halaman transaksi dimuat
+                setTimeout(function() {
+                    $('#modal-produk').modal('show');
+
+                    // Optional: Filter atau highlight produk yang baru ditambahkan
+                    if (typeof produkTable !== 'undefined') {
+                        // Reload tabel produk untuk menampilkan produk baru
+                        produkTable.ajax.reload(null, false);
+
+                        // Setelah data dimuat, pilih produk yang baru ditambahkan
+                        setTimeout(function() {
+                            // Cari dan centang produk baru
+                            produkTable.rows().every(function() {
+                                var data = this.data();
+                                if (data.id == {{ session('new_product_id') }}) {
+                                    // Pilih produk
+                                    $('input.produk-check[value="' + data.id + '"]').prop(
+                                        'checked', true).trigger('change');
+                                    // Scroll ke baris produk
+                                    var row = this.node();
+                                    $(row).addClass('selected-row');
+                                    $(row)[0].scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                    });
+                                }
+                            });
+                        }, 500);
+                    }
+                }, 1000);
+            @endif
+
             $('.custom-price-input').prop('disabled', false);
             $('.diskon-produk-input').prop('disabled', false);
 

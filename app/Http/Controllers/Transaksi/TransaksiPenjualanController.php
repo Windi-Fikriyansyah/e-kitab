@@ -568,7 +568,6 @@ class TransaksiPenjualanController extends Controller
                     ], 404);
                 }
             }
-            // Variabel untuk menyimpan nama ekspedisi yang akan disimpan
             $namaEkspedisi = $request->ekspedisi;
             $ekspedisiLogoPath = null;
 
@@ -632,8 +631,10 @@ class TransaksiPenjualanController extends Controller
             $usedDeposit = min($requestedDeposit, $totalTransaksi, $depositTersedia);
             $sisaDeposit = max(0, $requestedDeposit - $totalTransaksi);
             $remainingAmount = max(0, $totalTransaksi - $usedDeposit - $request->paid_amount);
+            $totalLaba = 0;
+            $totalOmset = 0;
 
-            // Simpan data transaksi
+
             $transaksiData = [
                 'kode_transaksi' => $kodeTransaksi,
                 'nomor_urut' => $nomorUrut,
@@ -666,7 +667,8 @@ class TransaksiPenjualanController extends Controller
                 'ongkir' => $request->ongkir ?? 0,
                 'packing_kayu' => $request->packing_kayu ?? 0,
                 'status_transaksi' => 'completed',
-
+                'totallaba' => 0,
+                'totalomset' => 0,
             ];
             if ($isUpdateDraft) {
                 // UPDATE DRAFT MENJADI TRANSAKSI COMPLETED
@@ -698,6 +700,19 @@ class TransaksiPenjualanController extends Controller
 
                 // Hitung total harga setelah diskon produk
                 $totalHargaSetelahDiskon = $hargaSetelahDiskonProduk * $item['quantity'];
+
+                $produk = DB::table('produk')->where('kd_produk', $item['kd_produk'])->first();
+
+                $harga_jual = $produk->harga_jual;
+                $harga_modal = $produk->harga_modal;
+
+                // Hitung laba
+                $laba = ($harga_jual - $harga_modal) * $item['quantity'];
+                $totalOmset += ($harga_jual * $item['quantity']);
+
+
+                // Tambahkan ke total laba transaksi
+                $totalLaba += $laba;
                 DB::table('transaksi_items')->insert([
                     'id_transaksi' => $transaksiId,
                     'kd_produk' => $item['kd_produk'],
@@ -708,6 +723,9 @@ class TransaksiPenjualanController extends Controller
                     'harga_setelah_diskon_produk' => $hargaSetelahDiskonProduk,
                     'is_custom_price' => $item['unit_price'] != $item['original_price'],
                     'total_price' => $totalHargaSetelahDiskon,
+                    'harga_jual' => $harga_jual,
+                    'harga_modal' => $harga_modal,
+                    'laba' => $laba,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -729,6 +747,13 @@ class TransaksiPenjualanController extends Controller
                 }
             }
 
+            DB::table('transaksi')
+                ->where('id', $transaksiId)
+                ->update([
+                    'totallaba' => $totalLaba,
+                    'totalomset' => $totalOmset,
+                    'updated_at' => now()
+                ]);
             DB::commit();
 
             return response()->json([

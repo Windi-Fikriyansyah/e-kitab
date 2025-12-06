@@ -48,7 +48,12 @@ class Dashboard extends Controller
         $dailyIncome = DB::table('transaksi')
             ->where('payment_status', 'lunas')
             ->whereDate('created_at', now()->toDateString())
-            ->sum('total');
+            ->sum('totalomset');
+
+        $labaPerHari = DB::table('transaksi')
+            ->where('payment_status', 'lunas')
+            ->whereDate('created_at', now()->toDateString())
+            ->sum('totallaba');
 
 
         // Omset per bulan (bulan ini)
@@ -56,7 +61,12 @@ class Dashboard extends Controller
             ->where('payment_status', 'lunas')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('total');
+            ->sum('totalomset');
+        $labaPerBulan = DB::table('transaksi')
+            ->where('payment_status', 'lunas')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('totallaba');
 
         $dailyPengeluaran = DB::table('pengeluaran')
             ->whereDate('tanggal', today())
@@ -81,8 +91,8 @@ class Dashboard extends Controller
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
             ->sum('nominal');
-        $labaPerHari = $dailyIncome - $dailyModal - $dailyPengeluaran;
-        $labaPerBulan = $monthlyIncome - $monthlyModal - $monthlyPengeluaran;
+        $labaPerHarii = $labaPerHari - $dailyPengeluaran;
+        $labaPerBulann = $labaPerBulan - $monthlyPengeluaran;
         // Total transaksi
         $totalTransactions = DB::table('transaksi')->count();
 
@@ -160,8 +170,8 @@ class Dashboard extends Controller
             'totalpiutang' => $totalpiutang,
             'bestSellers' => $bestSellers,
             'lowStockItems' => $lowStockItems,
-            'labaPerHari' => $labaPerHari,
-            'labaPerBulan' => $labaPerBulan,
+            'labaPerHari' => $labaPerHarii,
+            'labaPerBulan' => $labaPerBulann,
 
         ]);
     }

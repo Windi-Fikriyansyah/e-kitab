@@ -477,6 +477,11 @@
 
 
                     <button type="submit" class="btn btn-primary">{{ isset($produk) ? 'Update' : 'Tambah' }}</button>
+                    @if (!isset($produk))
+                        <button type="submit" name="save_and_transaction" value="1" class="btn btn-success">
+                            Simpan dan Langsung Transaksi
+                        </button>
+                    @endif
                     <a href="{{ route('kelola_data.produk.index') }}" class="btn btn-warning">Kembali</a>
                 </form>
             </div>
@@ -548,6 +553,7 @@
                         <span class="btn-text">Simpan</span>
                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     </button>
+
                 </div>
             </div>
         </div>

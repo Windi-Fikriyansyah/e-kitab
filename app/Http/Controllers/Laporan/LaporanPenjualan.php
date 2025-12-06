@@ -72,13 +72,17 @@ class LaporanPenjualan extends Controller
 
             $omsetQuery = clone $query;
             $omsetData = $omsetQuery
-                ->select(DB::raw('SUM(transaksi.total) as total_omset'))
+                ->select(DB::raw('SUM(transaksi.totalomset) as total_omset'))
+                ->first();
+            $labaQuery = clone $query;
+            $labaData = $labaQuery
+                ->select(DB::raw('SUM(transaksi.totallaba) as total_laba'))
                 ->first();
 
             $modalQuery = clone $query;
             $modalData = $modalQuery
                 ->leftJoin('transaksi_items', 'transaksi.id', '=', 'transaksi_items.id_transaksi')
-                ->select(DB::raw('SUM(transaksi_items.quantity * transaksi_items.unit_price) as total_modal'))
+                ->select(DB::raw('SUM(transaksi_items.quantity * transaksi_items.harga_modal) as total_modal'))
                 ->first();
 
 
@@ -91,7 +95,7 @@ class LaporanPenjualan extends Controller
                     'total_nilai' => $totals->total_nilai ?? 0,
                     'total_omset'     => $omsetData->total_omset ?? 0,
                     'total_modal'     => $modalData->total_modal ?? 0,
-                    'total_laba'      => ($omsetData->total_omset - $modalData->total_modal)
+                    'total_laba'      => $labaData->total_laba ?? 0
                 ])
                 ->make(true);
         } catch (\Exception $e) {
