@@ -7,12 +7,41 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PenulisTemplateExport;
+use App\Imports\PenulisImport;
 
 class PenulisController extends Controller
 {
     public function index()
     {
         return view('kelola_data.penulis.index');
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new PenulisTemplateExport, 'template-penulis.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        try {
+            Excel::import(new PenulisImport, $request->file('file'));
+
+            return redirect()->back()->with([
+                'message' => 'Import penulis berhasil!',
+                'message_type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message' => 'Gagal import: ' . $e->getMessage(),
+                'message_type' => 'danger'
+            ]);
+        }
     }
 
     public function load(Request $request)

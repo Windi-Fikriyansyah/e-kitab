@@ -61,17 +61,73 @@ class TransaksiSupplierController extends Controller
             })
 
             ->addColumn('aksi', function ($row) {
-                return '
-        <button class="btn btn-info btn-sm detail-btn"
-            data-id="' . $row->id . '">
+
+                $btnDetail = '
+        <button class="btn btn-info btn-sm detail-btn right-gap" data-id="' . $row->id . '">
             <i class="bx bx-search"></i> Detail
         </button>
     ';
+
+                $btnDelete = '';
+                if (auth()->check() && (int) auth()->user()->role === 1) {
+                    $btnDelete = '
+            <button class="btn btn-danger btn-sm delete-btn"
+                data-url="' . route('transaksi.transaksi_supplier.destroy', $row->id) . '">
+                <i class="bx bx-trash"></i> Hapus
+            </button>
+        ';
+                }
+
+                return $btnDetail . $btnDelete;
             })
+
 
 
             ->rawColumns(['aksi'])
             ->make(true);
+    }
+
+    public function destroy($id)
+    {
+        // Proteksi: hanya role 1 boleh hapus
+        if (!auth()->check() || (int) auth()->user()->role !== 1) {
+            return response()->json(['success' => false, 'message' => 'Tidak punya akses'], 403);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Ambil detail untuk balikin stok
+            $details = DB::table('transaksi_supplier_detail')
+                ->where('id_transaksi', $id)
+                ->get();
+
+            foreach ($details as $d) {
+                DB::table('produk')
+                    ->where('id', $d->id_produk)
+                    ->increment('stok', (int) $d->qty);
+            }
+
+            // Hapus transaksi utama yang terhubung (kalau ada)
+            DB::table('transaksi')
+                ->where('id_transaksi_supplier', $id)
+                ->delete();
+
+            // Hapus detail dulu
+            DB::table('transaksi_supplier_detail')
+                ->where('id_transaksi', $id)
+                ->delete();
+
+            // Hapus header
+            DB::table('transaksi_supplier')
+                ->where('id', $id)
+                ->delete();
+
+            DB::commit();
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
 
@@ -206,11 +262,13 @@ class TransaksiSupplierController extends Controller
                 'ekspedisi_lain'   => null,
 
                 // ========== PERHITUNGAN ==========
-                'subtotal'         => $total_biaya,            // total harga produk
+                'subtotal'         => $fee,            // total harga produk
                 'discount'         => 0,
                 'potongan'         => 0,
-                'total'            => $total_biaya,    // sesuai permintaan
-                'paid_amount'      => $total_biaya,
+                'total'            => $fee,    // sesuai permintaan
+                'paid_amount'      => $fee,
+                'totallaba'      => $fee,
+                'totalomset'      => $fee,
                 'remaining_amount' => 0,
                 'change_amount'    => 0,
 

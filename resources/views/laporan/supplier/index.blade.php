@@ -70,6 +70,26 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-0">Total Fee + Resi:
+                                        <span id="total-fee-resi" class="fw-bold">Rp 0</span>
+                                    </h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-0">Total Tagihan:
+                                        <span id="total-tagihan" class="fw-bold">Rp 0</span>
+                                    </h6>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -150,30 +170,34 @@
                         d.produk = $('#produk').val();
                     },
                     dataSrc: function(json) {
-                        // Update totals when data is loaded
+                        const toRupiah = (n) => 'Rp ' + (parseInt(n || 0)).toLocaleString('id-ID');
+
                         $('#total-qty').text(json.total_qty || 0);
-                        $('#total-nilai').text('Rp ' + (json.total_nilai ? parseInt(json.total_nilai)
-                            .toLocaleString('id-ID') : 0));
+                        $('#total-nilai').text(toRupiah(json.total_nilai));
+                        $('#total-fee-resi').text(toRupiah(json.total_fee_resi));
+                        $('#total-tagihan').text(toRupiah(json.total_tagihan));
+
                         return json.data;
                     }
+
                 },
                 pageLength: 10,
                 searching: true,
                 columns: [{
                         data: 'kd_produk',
-                        name: 'produk.kd_produk'
+                        name: 'p.kd_produk'
                     },
                     {
                         data: 'judul',
-                        name: 'produk.judul'
+                        name: 'p.judul'
                     },
                     {
                         data: 'nama_supplier',
-                        name: 'supplier.nama_supplier'
+                        name: 's.nama_supplier'
                     },
                     {
                         data: 'harga_modal',
-                        name: 'produk.harga_modal',
+                        name: 'p.harga_modal',
                         render: function(data) {
                             return 'Rp ' + parseInt(data).toLocaleString('id-ID');
                         }
@@ -190,10 +214,11 @@
                         }
                     },
                     {
-                        data: 'created_at',
-                        name: 'transaksi.created_at',
+                        data: 'tanggal_transaksi',
+                        name: 'tanggal_transaksi',
                         render: function(data) {
-                            return new Date(data).toLocaleDateString('id-ID');
+                            // data format: YYYY-MM-DD
+                            return new Date(data + 'T00:00:00').toLocaleDateString('id-ID');
                         }
                     }
                 ],

@@ -7,12 +7,41 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PenerbitTemplateExport;
+use App\Imports\PenerbitImport;
 
 class PenerbitController extends Controller
 {
     public function index()
     {
         return view('kelola_data.penerbit.index');
+    }
+
+    public function downloadTemplate()
+    {
+        return Excel::download(new PenerbitTemplateExport, 'template-penerbit.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        try {
+            Excel::import(new PenerbitImport, $request->file('file'));
+
+            return redirect()->back()->with([
+                'message' => 'Import penerbit berhasil!',
+                'message_type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message' => 'Gagal import: ' . $e->getMessage(),
+                'message_type' => 'danger'
+            ]);
+        }
     }
 
     public function load(Request $request)

@@ -52,7 +52,6 @@
 
                                 <th>Kode Transaksi</th>
                                 <th>Supplier</th>
-                                <th>Total Tagihan</th>
                                 <th>Resi</th>
                                 <th>Fee</th>
                                 <th>Aksi</th>
@@ -101,10 +100,6 @@
                         <tr>
                             <th>Fee</th>
                             <td id="d_fee"></td>
-                        </tr>
-                        <tr>
-                            <th>Total Tagihan</th>
-                            <td id="d_total_tagihan"></td>
                         </tr>
                     </table>
 
@@ -202,13 +197,6 @@
                         data: 'nama_supplier'
                     },
 
-                    // FORMAT TOTAL
-                    {
-                        data: 'total_tagihan',
-                        render: function(data) {
-                            return formatRupiah(data);
-                        }
-                    },
 
                     // FORMAT RESI
                     {
@@ -265,7 +253,7 @@
 
                 Swal.fire({
                     title: 'Apakah Anda yakin?',
-                    text: "Produk ini akan dihapus!",
+                    text: "Transaksi supplier ini akan dihapus!",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
@@ -284,14 +272,14 @@
                                 if (response.success) {
                                     Swal.fire(
                                         'Terhapus!',
-                                        'Produk berhasil dihapus.',
+                                        'Transaksi supplier berhasil dihapus.',
                                         'success'
                                     );
                                     table.ajax.reload();
                                 } else {
                                     Swal.fire(
                                         'Error!',
-                                        'Gagal menghapus produk.',
+                                        'Gagal menghapus Transaksi supplier.',
                                         'error'
                                     );
                                 }
@@ -299,7 +287,7 @@
                             error: function(xhr, status, error) {
                                 Swal.fire(
                                     'Error!',
-                                    'Gagal menghapus produk.',
+                                    'Gagal menghapus Transaksi supplier.',
                                     'error'
                                 );
                             }

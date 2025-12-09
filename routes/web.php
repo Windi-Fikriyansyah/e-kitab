@@ -166,6 +166,10 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('edit/{id}', [PenerbitController::class, 'edit'])->middleware('permission:9')->name('edit');
                 Route::put('update/{id}', [PenerbitController::class, 'update'])->middleware('permission:9')->name('update');
                 Route::delete('/penerbit/{id}', [PenerbitController::class, 'destroy'])->middleware('permission:9')->name('destroy');
+                Route::post('/import-excel', [PenerbitController::class, 'importExcel'])
+                    ->name('importExcel');
+                Route::get('/template-excel', [PenerbitController::class, 'downloadTemplate'])
+                    ->name('downloadTemplate');
             });
 
         Route::prefix('harakat')->as('harakat.')
@@ -243,6 +247,10 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('edit/{id}', [PenulisController::class, 'edit'])->middleware('permission:19')->name('edit');
                 Route::put('update/{id}', [PenulisController::class, 'update'])->middleware('permission:19')->name('update');
                 Route::delete('/supplier/{id}', [PenulisController::class, 'destroy'])->middleware('permission:19')->name('destroy');
+                Route::post('/import-excel', [PenulisController::class, 'importExcel'])
+                    ->name('importExcel');
+                Route::get('/template-excel', [PenulisController::class, 'downloadTemplate'])
+                    ->name('downloadTemplate');
             });
 
         Route::prefix('ukuran')->as('ukuran.')
@@ -485,6 +493,8 @@ Route::middleware(['auth'])->group(function () {
                     '/export/pdf',
                     [TransaksiSupplierController::class, 'exportPDF']
                 )->name('exportPDF');
+                Route::delete('/{id}', [TransaksiSupplierController::class, 'destroy'])
+                    ->name('destroy');
             });
     });
 
@@ -504,7 +514,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('', [LaporanSupplierController::class, 'index'])->middleware('permission:27')->name('index');
                 Route::post('load', [LaporanSupplierController::class, 'load'])->middleware('permission:27')->name('load');
                 Route::post('filter', [LaporanSupplierController::class, 'filter'])->middleware('permission:27')->name('filter');
-                Route::get('export', [LaporanSupplierController::class, 'export'])->middleware('permission:27')->name('export');
+                Route::get('/export', [LaporanSupplierController::class, 'exportExcel'])
+                    ->name('export');
             });
 
         Route::prefix('laporan_pengeluaran')->as('laporan_pengeluaran.')
