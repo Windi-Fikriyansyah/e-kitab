@@ -20,6 +20,7 @@ use App\Http\Controllers\KelolaData\KategoriController;
 use App\Http\Controllers\KelolaData\KertasController;
 use App\Http\Controllers\KelolaData\KualitasController;
 use App\Http\Controllers\KelolaData\LinkfooterController;
+use App\Http\Controllers\KelolaData\BlogController;
 use App\Http\Controllers\KelolaData\PenerbitController;
 use App\Http\Controllers\KelolaData\PenulisController;
 use App\Http\Controllers\KelolaData\ProdukController;
@@ -368,6 +369,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::put('update/{id}', [LinkfooterController::class, 'update'])->middleware('permission:37')->name('update');
                 Route::delete('/profile/{id}', [LinkfooterController::class, 'destroy'])->middleware('permission:37')->name('destroy');
                 Route::post('getsosmed', [LinkfooterController::class, 'getSosmed'])->middleware('permission:37')->name('get_sosmed');
+            });
+
+            Route::prefix('blog')->as('blog.')
+            ->group(function () {
+                Route::get('', [BlogController::class, 'index'])->middleware('permission:37')->name('index');
+                Route::post('load', [BlogController::class, 'load'])->middleware('permission:37')->name('load');
+                Route::get('create', [BlogController::class, 'create'])->middleware('permission:37')->name('create');
+                Route::post('store', [BlogController::class, 'store'])->middleware('permission:37')->name('store');
+                Route::get('edit/{id}', [BlogController::class, 'edit'])->middleware('permission:37')->name('edit');
+                Route::put('update/{id}', [BlogController::class, 'update'])->middleware('permission:37')->name('update');
+                Route::delete('/profile/{id}', [BlogController::class, 'destroy'])->middleware('permission:37')->name('destroy');
+                Route::post('getsosmed', [BlogController::class, 'getSosmed'])->middleware('permission:37')->name('get_sosmed');
             });
 
         Route::prefix('hero')->as('hero.')

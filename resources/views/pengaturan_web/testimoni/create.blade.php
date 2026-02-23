@@ -66,10 +66,14 @@
                     <div class="form-group mb-3">
                         <label for="foto_unboxing">Foto Unboxing</label>
                         <input type="file" name="foto_unboxing" id="foto_unboxing" class="form-control"
-                            {{ isset($testimoni) ? '' : 'required' }}>
+                            accept="image/webp" {{ isset($testimoni) ? '' : 'required' }}>
                         @if (isset($testimoni) && $testimoni->foto_unboxing)
+                            @php
+                                $fotoData = json_decode($testimoni->foto_unboxing);
+                                $url = is_object($fotoData) ? $fotoData->url : asset('storage/testimoni/' . $testimoni->foto_unboxing);
+                            @endphp
                             <div class="mt-2">
-                                <img src="{{ asset('storage/testimoni/' . $testimoni->foto_unboxing) }}" class="logo-img"
+                                <img src="{{ $url }}" class="logo-img"
                                     alt="Foto Unboxing">
                             </div>
                         @endif

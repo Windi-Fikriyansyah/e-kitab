@@ -8,9 +8,17 @@ use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\ImageKitService;
 
 class TestimoniController extends Controller
 {
+    protected $imageKitService;
+
+    public function __construct(ImageKitService $imageKitService)
+    {
+        $this->imageKitService = $imageKitService;
+    }
+
     public function index()
     {
         return view('pengaturan_web.testimoni.index');
@@ -34,7 +42,8 @@ class TestimoniController extends Controller
             ->addIndexColumn()
             ->addColumn('foto_unboxing', function ($row) {
                 if ($row->foto_unboxing) {
-                    $url = asset('storage/testimoni/' . $row->foto_unboxing);
+                    $fotoData = json_decode($row->foto_unboxing, true);
+                    $url = (is_array($fotoData) && isset($fotoData['url'])) ? $fotoData['url'] : asset('storage/testimoni/' . $row->foto_unboxing);
                     return '<img src="' . $url . '" class="logo-img" alt="Foto">';
                 }
                 return '<span class="badge bg-secondary">Tidak ada</span>';
@@ -59,17 +68,29 @@ class TestimoniController extends Controller
         $request->validate([
             'nama_customer' => 'required|string|max:255',
             'caption' => 'required|string|max:500',
-            'foto_unboxing' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'foto_unboxing' => 'required|image|mimes:webp|max:2048',
+        ], [
+            'foto_unboxing.mimes' => 'Format gambar yang diperbolehkan: webp',
         ]);
 
-        // Simpan foto
-        $fotoName = time() . '.' . $request->foto_unboxing->extension();
-        $request->foto_unboxing->storeAs('public/testimoni', $fotoName);
+        $image = $request->file('foto_unboxing');
+        $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+        
+        // Upload to ImageKit
+        $upload = $this->imageKitService->upload($image, $imageName, 'testimoni');
+        
+        $fotoData = null;
+        if (isset($upload->result) && $upload->result) {
+            $fotoData = json_encode([
+                'url' => $upload->result->url,
+                'file_id' => $upload->result->fileId
+            ]);
+        }
 
         DB::table('testimoni')->insert([
             'nama_customer' => $request->nama_customer,
             'caption' => $request->caption,
-            'foto_unboxing' => $fotoName,
+            'foto_unboxing' => $fotoData,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -85,8 +106,12 @@ class TestimoniController extends Controller
         $request->validate([
             'nama_customer' => 'required|string|max:255',
             'caption' => 'required|string|max:500',
-            'foto_unboxing' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'foto_unboxing' => 'nullable|image|mimes:webp|max:2048',
+        ], [
+            'foto_unboxing.mimes' => 'Format gambar yang diperbolehkan: webp',
         ]);
+
+        $existingTestimoni = DB::table('testimoni')->find($id);
 
         $data = [
             'nama_customer' => $request->nama_customer,
@@ -95,9 +120,29 @@ class TestimoniController extends Controller
         ];
 
         if ($request->hasFile('foto_unboxing')) {
-            $fotoName = time() . '.' . $request->foto_unboxing->extension();
-            $request->foto_unboxing->storeAs('public/testimoni', $fotoName);
-            $data['foto_unboxing'] = $fotoName;
+            // Hapus foto lama jika ada di ImageKit
+            if ($existingTestimoni->foto_unboxing) {
+                $oldFotoData = json_decode($existingTestimoni->foto_unboxing, true);
+                if (is_array($oldFotoData) && isset($oldFotoData['file_id'])) {
+                    $this->imageKitService->delete($oldFotoData['file_id']);
+                } else {
+                    // Fallback local delete
+                    Storage::delete('public/testimoni/' . $existingTestimoni->foto_unboxing);
+                }
+            }
+
+            $image = $request->file('foto_unboxing');
+            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            
+            // Upload to ImageKit
+            $upload = $this->imageKitService->upload($image, $imageName, 'testimoni');
+            
+            if (isset($upload->result) && $upload->result) {
+                $data['foto_unboxing'] = json_encode([
+                    'url' => $upload->result->url,
+                    'file_id' => $upload->result->fileId
+                ]);
+            }
         }
 
         DB::table('testimoni')->where('id', $id)->update($data);
@@ -116,8 +161,6 @@ class TestimoniController extends Controller
     }
 
 
-
-
     public function destroy($id)
     {
         try {
@@ -126,8 +169,17 @@ class TestimoniController extends Controller
 
             if ($testimoni) {
                 // Hapus file foto jika ada
-                if ($testimoni->foto_unboxing && Storage::exists('public/testimoni/' . $testimoni->foto_unboxing)) {
-                    Storage::delete('public/testimoni/' . $testimoni->foto_unboxing);
+                if ($testimoni->foto_unboxing) {
+                    $fotoData = json_decode($testimoni->foto_unboxing, true);
+                    if (is_array($fotoData) && isset($fotoData['file_id'])) {
+                        // Delete from ImageKit
+                        $this->imageKitService->delete($fotoData['file_id']);
+                    } else {
+                        // Delete from local storage
+                        if (Storage::exists('public/testimoni/' . $testimoni->foto_unboxing)) {
+                            Storage::delete('public/testimoni/' . $testimoni->foto_unboxing);
+                        }
+                    }
                 }
 
                 // Hapus data dari database
@@ -135,7 +187,7 @@ class TestimoniController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Testimoni berhasil dihapus.'
+                    'message' => 'Testimoni dan gambar berhasil dihapus.'
                 ]);
             }
 
@@ -146,7 +198,7 @@ class TestimoniController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghapus testimoni.'
+                'message' => 'Gagal menghapus testimoni: ' . $e->getMessage()
             ], 500);
         }
     }

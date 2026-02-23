@@ -14,13 +14,18 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\RiwayatProdukExport;
 use App\Imports\ProdukImport;
 use App\Exports\ProdukTemplateExport;
-
-
-
+use App\Services\ImageKitService;
 
 
 class ProdukController extends Controller
 {
+    protected $imageKitService;
+
+    public function __construct(ImageKitService $imageKitService)
+    {
+        $this->imageKitService = $imageKitService;
+    }
+
     public function index()
     {
         $kategoris = DB::table('kategori')->select('id', 'nama_arab', 'nama_indonesia')->get();
@@ -436,20 +441,28 @@ class ProdukController extends Controller
     /**
      * Generate full URL for product image
      */
-    protected function generateImageUrl($imagePath)
+    protected function generateImageUrl($image)
     {
-        if (empty($imagePath)) {
+        if (empty($image)) {
             return null;
         }
 
-        // Check if the path is already a URL
-        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
-            return $imagePath;
+        // If it's an array (new format), return the 'url'
+        if (is_array($image) && isset($image['url'])) {
+            return $image['url'];
         }
 
-        // Assuming images are stored in storage/app/public/product
-        // and symbolic link is created to public/storage
-        return Storage::disk('public')->url('products/' . ltrim($imagePath, '/'));
+        // If it's already a URL
+        if (is_string($image) && filter_var($image, FILTER_VALIDATE_URL)) {
+            return $image;
+        }
+
+        // Fallback for old local images
+        if (is_string($image)) {
+            return Storage::disk('public')->url('products/' . ltrim($image, '/'));
+        }
+
+        return null;
     }
     public function load(Request $request)
     {
@@ -736,7 +749,7 @@ class ProdukController extends Controller
             'harga_modal' => 'nullable|numeric',
             'harga_jual' => 'nullable|numeric',
             'stok' => 'nullable|integer',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'images.*' => 'image|mimes:webp|max:2048'
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
             'link_youtube.url' => 'Harus masukan dalam bentuk url',
@@ -756,7 +769,7 @@ class ProdukController extends Controller
             'harga_jual.required' => 'Harga jual wajib diisi',
             'stok.required' => 'Stok wajib diisi',
             'images.*.image' => 'File harus berupa gambar',
-            'images.*.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif',
+            'images.*.mimes' => 'Format gambar yang diperbolehkan: webp',
             'images.*.max' => 'Ukuran gambar maksimal 2MB'
         ]);
 
@@ -804,14 +817,17 @@ class ProdukController extends Controller
             $imageNames = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    // Generate unique filename
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-
-                    // Store the file in storage/app/public/products
-                    $path = $image->storeAs('public/products', $imageName);
-
-                    // Add to array of image names
-                    $imageNames[] = $imageName;
+                    
+                    // Upload to ImageKit
+                    $upload = $this->imageKitService->upload($image, $imageName);
+                    
+                    if (isset($upload->result) && $upload->result) {
+                        $imageNames[] = [
+                            'url' => $upload->result->url,
+                            'file_id' => $upload->result->fileId
+                        ];
+                    }
                 }
             }
             // Data untuk tabel produk
@@ -945,7 +961,7 @@ class ProdukController extends Controller
             'harga_modal' => 'nullable|numeric',
             'harga_jual' => 'nullable|numeric',
             'stok' => 'nullable|integer',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*' => 'image|mimes:webp|max:2048',
             'delete_images.*' => 'sometimes|string'
         ], [
             'judul_arab.required' => 'Judul produk (Arab) wajib diisi',
@@ -967,7 +983,7 @@ class ProdukController extends Controller
             'harga_jual.required' => 'Harga jual wajib diisi',
             'stok.required' => 'Stok wajib diisi',
             'images.*.image' => 'File harus berupa gambar',
-            'images.*.mimes' => 'Format gambar yang diperbolehkan: jpeg, png, jpg, gif',
+            'images.*.mimes' => 'Format gambar yang diperbolehkan: webp',
             'images.*.max' => 'Ukuran gambar maksimal 2MB'
         ]);
 
@@ -1014,7 +1030,15 @@ class ProdukController extends Controller
 
             // Jika ada gambar yang sudah ada, tambahkan ke array
             if ($request->has('existing_images')) {
-                $imageNames = $request->existing_images;
+                $rawExisting = $request->existing_images;
+                if (is_array($rawExisting)) {
+                    $imageNames = array_map(function($item) {
+                        $decoded = json_decode($item, true);
+                        return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $item;
+                    }, $rawExisting);
+                } else {
+                    $imageNames = json_decode($rawExisting, true) ?? [];
+                }
             } elseif ($existingProduct->images) {
                 $imageNames = json_decode($existingProduct->images, true);
             }
@@ -1022,11 +1046,27 @@ class ProdukController extends Controller
             // Hapus gambar yang dipilih
             if ($request->has('delete_images')) {
                 foreach ($request->delete_images as $imageToDelete) {
-                    if (($key = array_search($imageToDelete, $imageNames)) !== false) {
-                        // Hapus file dari storage
-                        Storage::delete('public/products/' . $imageToDelete);
-                        // Hapus dari array
-                        unset($imageNames[$key]);
+                    // Cari object yang sesuai di imageNames
+                    foreach ($imageNames as $key => $imgObj) {
+                        // Cek apakah itu format baru (object) atau lama (string)
+                        if (is_array($imgObj)) {
+                            // Cek berdasarkan URL atau file_id
+                            if ($imgObj['url'] === $imageToDelete || (isset($imgObj['file_id']) && $imgObj['file_id'] === $imageToDelete)) {
+                                // Hapus dari ImageKit jika ada file_id
+                                if (isset($imgObj['file_id'])) {
+                                    $this->imageKitService->delete($imgObj['file_id']);
+                                }
+                                unset($imageNames[$key]);
+                                break;
+                            }
+                        } else {
+                            // Format lama (string filename)
+                            if ($imgObj === $imageToDelete) {
+                                Storage::delete('public/products/' . $imgObj);
+                                unset($imageNames[$key]);
+                                break;
+                            }
+                        }
                     }
                 }
                 $imageNames = array_values($imageNames); // Reindex array
@@ -1035,14 +1075,17 @@ class ProdukController extends Controller
             // Tambahkan gambar baru
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    // Generate nama unik untuk gambar
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
 
-                    // Simpan gambar
-                    $path = $image->storeAs('public/products', $imageName);
+                    // Upload ke ImageKit
+                    $upload = $this->imageKitService->upload($image, $imageName);
 
-                    // Tambahkan ke array
-                    $imageNames[] = $imageName;
+                    if (isset($upload->result) && $upload->result) {
+                        $imageNames[] = [
+                            'url' => $upload->result->url,
+                            'file_id' => $upload->result->fileId
+                        ];
+                    }
                 }
             }
             // Siapkan data untuk update tabel produk
@@ -1399,6 +1442,26 @@ class ProdukController extends Controller
 
             $decryptedId = Crypt::decrypt($id);
 
+            // Ambil data produk untuk mendapatkan informasi gambar
+            $product = DB::table('produk')->where('id', $decryptedId)->first();
+
+            if ($product && $product->images) {
+                $images = json_decode($product->images, true);
+                if (is_array($images)) {
+                    foreach ($images as $image) {
+                        if (is_array($image)) {
+                            // Format baru (ImageKit)
+                            if (isset($image['file_id'])) {
+                                $this->imageKitService->delete($image['file_id']);
+                            }
+                        } else {
+                            // Format lama (LocalStorage)
+                            Storage::delete('public/products/' . $image);
+                        }
+                    }
+                }
+            }
+
             // Hapus data dari tabel produk_indo terlebih dahulu
             DB::table('produk_indo')->where('id_produk', $decryptedId)->delete();
 
@@ -1410,7 +1473,7 @@ class ProdukController extends Controller
             if ($deleted) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Produk berhasil dihapus.'
+                    'message' => 'Produk dan gambar berhasil dihapus.'
                 ]);
             }
 

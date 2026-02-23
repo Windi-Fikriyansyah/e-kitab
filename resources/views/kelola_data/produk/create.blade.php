@@ -433,7 +433,7 @@
                         <label>Gambar Produk</label>
                         <div id="imageUploadContainer">
                             <div class="input-group mb-3">
-                                <input type="file" name="images[]" class="form-control" accept="image/*" multiple>
+                                <input type="file" name="images[]" class="form-control" accept="image/webp" multiple>
                                 <button type="button" class="btn btn-success add-more-btn"
                                     onclick="addMoreImageField()">
                                     <i class="fas fa-plus"></i>
@@ -445,17 +445,24 @@
                                 <h6>Gambar Saat Ini:</h6>
                                 <div class="row">
                                     @foreach (json_decode($produk->images) as $image)
+                                        @php
+                                            $isObject = is_object($image) || is_array($image);
+                                            $imageUrl = $isObject ? (is_object($image) ? $image->url : $image['url']) : asset('storage/products/' . $image);
+                                            $imageValue = $isObject ? (is_object($image) ? $image->url : $image['url']) : $image;
+                                            // file_id for deletion if it exists
+                                            $fileId = $isObject ? (is_object($image) ? ($image->file_id ?? null) : ($image['file_id'] ?? null)) : null;
+                                        @endphp
                                         <div class="col-md-3 mb-3">
-                                            <img src="{{ asset('storage/products/' . $image) }}" class="img-thumbnail"
+                                            <img src="{{ $imageUrl }}" class="img-thumbnail"
                                                 style="width: 100%; height: 150px; object-fit: cover;">
                                             <div class="form-check mt-2">
                                                 <input class="form-check-input" type="checkbox" name="delete_images[]"
-                                                    value="{{ $image }}" id="delete-{{ $loop->index }}">
+                                                    value="{{ $fileId ?? $imageValue }}" id="delete-{{ $loop->index }}">
                                                 <label class="form-check-label" for="delete-{{ $loop->index }}">
                                                     Hapus gambar
                                                 </label>
                                             </div>
-                                            <input type="hidden" name="existing_images[]" value="{{ $image }}">
+                                            <input type="hidden" name="existing_images[]" value="{{ json_encode($image) }}">
                                         </div>
                                     @endforeach
                                 </div>
@@ -566,7 +573,7 @@
             const newField = document.createElement('div');
             newField.className = 'input-group mb-3';
             newField.innerHTML = `
-                <input type="file" name="images[]" class="form-control" accept="image/*">
+                <input type="file" name="images[]" class="form-control" accept="image/webp">
                 <button type="button" class="btn btn-danger remove-btn" onclick="removeImageField(this)">
                     <i class="fas fa-minus"></i>
                 </button>

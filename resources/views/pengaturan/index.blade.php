@@ -64,50 +64,56 @@
                             @endif
 
                             <div class="mt-4">
-
-
                                 <!-- Gambar Slider -->
-                                <h6 class="mb-3 text-primary mt-4">Gambar Slider</h6>
+                                <h6 class="mb-3 text-primary mt-4">Gambar Slider (Hero)</h6>
 
-                                <div class="row mb-3">
-                                    <label class="col-sm-2 col-form-label">Gambar 1</label>
-                                    <div class="col-sm-10">
-                                        <input type="file" name="hero_image_1"
-                                            class="form-control image-upload @error('hero_image_1') is-invalid @enderror"
-                                            accept="image/*" data-preview="hero_image_1_preview" />
-                                        <div class="image-preview mt-2" id="hero_image_1_preview">
-                                            @if (isset($landing) && $landing->hero_image_1)
-                                                <img src="{{ asset('storage/' . $landing->hero_image_1) }}"
-                                                    class="img-thumbnail" style="max-height: 150px;">
-                                                <small class="text-muted d-block">Current:
-                                                    {{ basename($landing->hero_image_1) }}</small>
-                                            @endif
+                                <div id="heroImagesContainer">
+                                    <div class="row mb-3">
+                                        <label class="col-sm-2 col-form-label">Tambah Gambar</label>
+                                        <div class="col-sm-10">
+                                            <div class="input-group mb-3">
+                                                <input type="file" name="hero_images[]" class="form-control" accept="image/webp,image/*" multiple>
+                                                <button type="button" class="btn btn-success" onclick="addHeroImageField()">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                        @error('hero_image_1')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
                                     </div>
                                 </div>
 
-                                <div class="row mb-3">
-                                    <label class="col-sm-2 col-form-label">Gambar 2</label>
-                                    <div class="col-sm-10">
-                                        <input type="file" name="hero_image_2"
-                                            class="form-control image-upload @error('hero_image_2') is-invalid @enderror"
-                                            accept="image/*" data-preview="hero_image_2_preview" />
-                                        <div class="image-preview mt-2" id="hero_image_2_preview">
-                                            @if (isset($landing) && $landing->hero_image_2)
-                                                <img src="{{ asset('storage/' . $landing->hero_image_2) }}"
-                                                    class="img-thumbnail" style="max-height: 150px;">
-                                                <small class="text-muted d-block">Current:
-                                                    {{ basename($landing->hero_image_2) }}</small>
-                                            @endif
+                                @if (isset($landing))
+                                    @php
+                                        $images = [];
+                                        if ($landing->hero_images) {
+                                            $images = json_decode($landing->hero_images);
+                                        } else {
+                                            if ($landing->hero_image_1) $images[] = (object)['url' => asset('storage/'.$landing->hero_image_1), 'path' => $landing->hero_image_1];
+                                            if ($landing->hero_image_2) $images[] = (object)['url' => asset('storage/'.$landing->hero_image_2), 'path' => $landing->hero_image_2];
+                                        }
+                                    @endphp
+
+                                    @if(count($images) > 0)
+                                        <h6 class="mb-3 text-primary mt-4">Gambar Saat Ini</h6>
+                                        <div class="row">
+                                            @foreach ($images as $index => $image)
+                                                @php
+                                                    $valToDelete = isset($image->file_id) ? $image->file_id : ($image->path ?? $image->url);
+                                                @endphp
+                                                <div class="col-md-3 mb-3">
+                                                    <div class="card h-100 border">
+                                                        <img src="{{ $image->url }}" class="card-img-top p-2" style="height: 150px; object-fit: cover;">
+                                                        <div class="card-body p-2 text-center">
+                                                            <div class="form-check d-flex justify-content-center">
+                                                                <input class="form-check-input" type="checkbox" name="delete_images[]" value="{{ $valToDelete }}" id="delHero-{{ $index }}">
+                                                                <label class="form-check-label ms-2" for="delHero-{{ $index }}">Hapus</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                        @error('hero_image_2')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
+                                    @endif
+                                @endif
                             </div>
 
                             <!-- Submit Buttons -->
@@ -161,54 +167,44 @@
 
 @push('js')
     <script>
+        function addHeroImageField() {
+            const container = document.getElementById('heroImagesContainer');
+            const newField = document.createElement('div');
+            newField.className = 'row mb-3';
+            newField.innerHTML = `
+                <label class="col-sm-2 col-form-label"></label>
+                <div class="col-sm-10">
+                    <div class="input-group mb-3">
+                        <input type="file" name="hero_images[]" class="form-control" accept="image/webp,image/*">
+                        <button type="button" class="btn btn-danger" onclick="removeHeroImageField(this)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newField);
+        }
+
+        function removeHeroImageField(button) {
+            button.closest('.row').remove();
+        }
+
         $(document).ready(function() {
-            // Image preview functionality
-            function readURL(input, previewId) {
-                if (input.files && input.files[0]) {
-                    var reader = new FileReader();
+            // Toast initialization
+            @if (session('success'))
+                var successToast = new bootstrap.Toast(document.getElementById('successToast'));
+                successToast.show();
+            @endif
 
-                    reader.onload = function(e) {
-                        $('#' + previewId).html(
-                            '<img src="' + e.target.result +
-                            '" class="img-thumbnail" style="max-height: 150px;">' +
-                            '<button type="button" class="btn btn-sm btn-danger remove-preview mt-2" data-preview="' +
-                            previewId + '">' +
-                            '<i class="fas fa-times"></i> Hapus Preview' +
-                            '</button>'
-                        );
-                    }
+            @if (session('error'))
+                var errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+                errorToast.show();
+            @endif
 
-                    reader.readAsDataURL(input.files[0]);
-                }
-            }
-
-            // Handle image upload and preview
-            $('.image-upload').change(function() {
-                var previewId = $(this).data('preview');
-                readURL(this, previewId);
-            });
-
-            // Remove preview image
-            $(document).on('click', '.remove-preview', function() {
-                var previewId = $(this).data('preview');
-                $('#' + previewId).html('');
-                $('input[data-preview="' + previewId + '"]').val('');
-            });
+            @if ($errors->any())
+                var validationToast = new bootstrap.Toast(document.getElementById('validationToast'));
+                validationToast.show();
+            @endif
         });
-
-        @if (session('success'))
-            var successToast = new bootstrap.Toast(document.getElementById('successToast'));
-            successToast.show();
-        @endif
-
-        @if (session('error'))
-            var errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
-            errorToast.show();
-        @endif
-
-        @if ($errors->any())
-            var validationToast = new bootstrap.Toast(document.getElementById('validationToast'));
-            validationToast.show();
-        @endif
     </script>
 @endpush

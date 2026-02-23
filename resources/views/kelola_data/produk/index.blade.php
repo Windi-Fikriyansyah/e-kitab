@@ -435,9 +435,15 @@
                                 try {
                                     const images = JSON.parse(data);
                                     if (images.length > 0) {
-                                        // Ambil gambar pertama
-                                        const imageUrl = "{{ asset('storage/products') }}/" +
-                                            images[0];
+                                        let imageUrl;
+                                        const firstImage = images[0];
+                                        
+                                        if (typeof firstImage === 'object' && firstImage.url) {
+                                            imageUrl = firstImage.url;
+                                        } else {
+                                            imageUrl = "{{ asset('storage/products') }}/" + firstImage;
+                                        }
+                                        
                                         return `<img src="${imageUrl}" class="product-thumbnail" alt="Product Image">`;
                                     }
                                 } catch (e) {
